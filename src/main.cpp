@@ -20,11 +20,15 @@
 #ifdef __ANDROID__
 #include <SDL_system.h>
 #include <unistd.h>
+#include <android/log.h>
+#define LOGI(...) do { __android_log_print(ANDROID_LOG_INFO, "HL5", __VA_ARGS__); fprintf(stderr, __VA_ARGS__); } while(0)
+#define LOGE(...) do { __android_log_print(ANDROID_LOG_ERROR, "HL5", __VA_ARGS__); fprintf(stderr, __VA_ARGS__); } while(0)
 
 static void ensureAndroidAssets(const std::string& storageDir) {
+    LOGI("[android] Reading assets_list.txt...\n");
     SDL_RWops* mf = SDL_RWFromFile("assets_list.txt", "rb");
     if (!mf) {
-        fprintf(stderr, "[android] assets_list.txt not found in APK assets\n");
+        LOGE("[android] assets_list.txt not found in APK assets\n");
         return;
     }
     Sint64 mfSize = SDL_RWsize(mf);
@@ -37,6 +41,7 @@ static void ensureAndroidAssets(const std::string& storageDir) {
 
     std::istringstream iss(content);
     std::string line;
+    int extracted = 0, skipped = 0;
     while (std::getline(iss, line)) {
         while (!line.empty() && (line.back() == '\r' || line.back() == ' ' || line.back() == '\t')) line.pop_back();
         if (line.empty()) continue;
@@ -50,13 +55,17 @@ static void ensureAndroidAssets(const std::string& storageDir) {
         if (std::filesystem::exists(dst, ec)) {
             auto curSize = std::filesystem::file_size(dst, ec);
             if (!ec && curSize == expectedSize) {
+                skipped++;
                 continue; // up to date
             }
         }
 
         std::filesystem::create_directories(std::filesystem::path(dst).parent_path(), ec);
         SDL_RWops* src = SDL_RWFromFile(relPath.c_str(), "rb");
-        if (!src) continue;
+        if (!src) {
+            LOGE("[android] Failed to open APK asset: %s\n", relPath.c_str());
+            continue;
+        }
         FILE* out = fopen(dst.c_str(), "wb");
         if (!out) { SDL_RWclose(src); continue; }
 
@@ -68,8 +77,13 @@ static void ensureAndroidAssets(const std::string& storageDir) {
         }
         fclose(out);
         SDL_RWclose(src);
+        extracted++;
     }
+    LOGI("[android] Assets check done: %d extracted, %d skipped\n", extracted, skipped);
 }
+#else
+#define LOGI(...) fprintf(stderr, __VA_ARGS__)
+#define LOGE(...) fprintf(stderr, __VA_ARGS__)
 #endif
 
 static void dumpBmp(const std::string& path, const Screen& s) {
@@ -278,6 +292,15 @@ int main(int argc, char** argv) {
 #elif defined(__ANDROID__)
     const char* internalStorage = SDL_AndroidGetInternalStoragePath();
     std::string baseStorage = (internalStorage && internalStorage[0] != '\0') ? internalStorage : ".";
+    std::string logPath = baseStorage + "/boot.log";
+    static FILE* s_androidLog = fopen(logPath.c_str(), "w");
+    if (s_androidLog) {
+        dup2(fileno(s_androidLog), STDOUT_FILENO);
+        dup2(fileno(s_androidLog), STDERR_FILENO);
+        setvbuf(stdout, nullptr, _IONBF, 0);
+        setvbuf(stderr, nullptr, _IONBF, 0);
+    }
+    LOGI("[Android] baseStorage: %s\n", baseStorage.c_str());
     ensureAndroidAssets(baseStorage);
     apk = baseStorage;
     data = baseStorage + "/data";
@@ -318,7 +341,12 @@ int main(int argc, char** argv) {
     }
     static Game game;
     game.verbose = verbose;
-    if (!game.boot(apk, data, lw, lh)) return 1;
+    LOGI("[Init] Calling Game::boot(apk=%s, data=%s)...\n", apk.c_str(), data.c_str());
+    if (!game.boot(apk, data, lw, lh)) {
+        LOGE("[Init] Game::boot failed!\n");
+        return 1;
+    }
+    LOGI("[Init] Game::boot OK, screen size: %dx%d\n", game.screen.w, game.screen.h);
 
     SDL_Window* win = nullptr; SDL_Renderer* ren = nullptr; SDL_Texture* tex = nullptr;
     std::vector<SDL_GameController*> controllers;
@@ -387,23 +415,32 @@ int main(int argc, char** argv) {
         win = SDL_CreateWindow("Heroes Lore 5: Covenant of Darkness", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, W * 2, H * 2, SDL_WINDOW_RESIZABLE);
 #endif
         if (!win) {
-            fprintf(stderr, "[SDL] SDL_CreateWindow failed: %s\n", SDL_GetError());
+            LOGE("[SDL] SDL_CreateWindow failed: %s\n", SDL_GetError());
             return 1;
         }
+        int curWinW = 0, curWinH = 0;
+        SDL_GetWindowSize(win, &curWinW, &curWinH);
+        LOGI("[SDL] Window created (%dx%d)\n", curWinW, curWinH);
         ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
         if (!ren) {
-            fprintf(stderr, "[SDL] Accelerated renderer failed: %s, falling back to software\n", SDL_GetError());
+            LOGE("[SDL] Accelerated renderer failed: %s, falling back to software\n", SDL_GetError());
             ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_SOFTWARE);
         }
         if (!ren) {
-            fprintf(stderr, "[SDL] SDL_CreateRenderer failed: %s\n", SDL_GetError());
+            LOGE("[SDL] SDL_CreateRenderer failed: %s\n", SDL_GetError());
             return 1;
         }
+        LOGI("[SDL] Renderer created successfully\n");
         tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, W, H);
         if (!tex) {
-            fprintf(stderr, "[SDL] SDL_CreateTexture failed: %s\n", SDL_GetError());
+            LOGE("[SDL] SDL_CreateTexture ARGB8888 failed: %s, trying ABGR8888...\n", SDL_GetError());
+            tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, W, H);
+        }
+        if (!tex) {
+            LOGE("[SDL] SDL_CreateTexture failed completely: %s\n", SDL_GetError());
             return 1;
         }
+        LOGI("[SDL] Texture created (%dx%d)\n", W, H);
 
         for (int i = 0; i < SDL_NumJoysticks(); i++) openController(i);
     }
@@ -502,7 +539,11 @@ int main(int argc, char** argv) {
             SDL_GetWindowSize(win, &winW, &winH);
             SDL_Rect dst = computeDstRect(winW, winH);
 
-            SDL_UpdateTexture(tex, nullptr, game.screen.px.data(), game.screen.w * 4);
+            int res = SDL_UpdateTexture(tex, nullptr, game.screen.px.data(), game.screen.w * 4);
+            if (res != 0) {
+                static int errCnt = 0;
+                if (errCnt++ < 5) LOGE("[SDL] SDL_UpdateTexture failed: %s\n", SDL_GetError());
+            }
             SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
             SDL_RenderClear(ren);
             SDL_RenderCopy(ren, tex, nullptr, &dst);
@@ -522,7 +563,7 @@ int main(int argc, char** argv) {
         }
         if (f % 60 == 0) {
             double s = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
-            fprintf(stderr, "[run] frame %d t=%.1fs icount=%.1fM draws=%llu screen=%dx%d\n", f, s, game.cpu.icount / 1e6, (unsigned long long)game.screen.draws, game.screen.w, game.screen.h);
+            LOGI("[run] frame %d t=%.1fs icount=%.1fM draws=%llu screen=%dx%d\n", f, s, game.cpu.icount / 1e6, (unsigned long long)game.screen.draws, game.screen.w, game.screen.h);
         }
     }
     if (!dumpDir.empty()) dumpBmp(dumpDir + "/final.bmp", game.screen);

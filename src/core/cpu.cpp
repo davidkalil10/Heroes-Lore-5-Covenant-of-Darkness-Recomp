@@ -168,10 +168,7 @@ void Cpu::step() {
         }
         case 0x00100000 + 0x4d9f0:   // DSPSock::DSP_setType
         case 0x00100000 + 0xc3bbc:   // NETWORK::CreatePatchPopup -> no-op
-        case 0x00100000 + 0xc42a0:   // NETWORK::CreatePopup
-        case 0x00100000 + 0x3fef0:   // __knlGR_draw -> suppress Korean rating badge
-        case 0x00100000 + 0x3fff4:   // gamerating_draw -> suppress Korean rating badge
-        case 0x00100000 + 0x40d78: { // MX_cmnDrawGameRating -> suppress Korean rating badge
+        case 0x00100000 + 0xc42a0: { // NETWORK::CreatePopup
             r[15] = r[14];
             return;
         }

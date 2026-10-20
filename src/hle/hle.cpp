@@ -22,6 +22,15 @@
 #include <map>
 #include <sys/stat.h>
 
+#ifdef __ANDROID__
+#include <android/log.h>
+#define LOGI(...) do { __android_log_print(ANDROID_LOG_INFO, "HL5", __VA_ARGS__); fprintf(stderr, __VA_ARGS__); } while(0)
+#define LOGE(...) do { __android_log_print(ANDROID_LOG_ERROR, "HL5", __VA_ARGS__); fprintf(stderr, __VA_ARGS__); } while(0)
+#else
+#define LOGI(...) fprintf(stderr, __VA_ARGS__)
+#define LOGE(...) fprintf(stderr, __VA_ARGS__)
+#endif
+
 // ---------------------------------------------------------------- globals
 static Game* G = nullptr;
 static std::string g_apkDir, g_dataDir;
@@ -157,8 +166,8 @@ static void glDraw(u32 mode, u32 first, u32 count) {
     float x0 = 1e30f, y0 = 1e30f, x1 = -1e30f, y1 = -1e30f;
     float uTL = 0, vTL = 0, uBR = 0, vBR = 0, bestTL = 1e30f, bestBR = -1e30f;
     static int drawCount = 0;
-    if (drawCount++ < 5) {
-        fprintf(stderr, "[glDraw] mode=%u first=%u count=%u vtxType=0x%x tcType=0x%x yUp=%d\n", mode, first, count, g_vtxType, g_tcType, yUp);
+    if (drawCount++ < 10) {
+        LOGI("[glDraw] #%d: mode=%u first=%u count=%u vtxType=0x%x tcType=0x%x yUp=%d bound=%u\n", drawCount, mode, first, count, g_vtxType, g_tcType, yUp, g_bound);
     }
     for (u32 i = first; i < first + count && i < first + 4; i++) {
         float gx = readComp(g_vtxPtr + i * vs, g_vtxType), gy = readComp(g_vtxPtr + i * vs + compSize(g_vtxType), g_vtxType);
@@ -266,7 +275,21 @@ static u32 stringObj(const std::string& s) { JObj o; o.k = 2; o.s = s; return ne
 
 static u32 javaStatic(const std::string& name, const std::string& sig, std::vector<u64>& a, u32& hi) {
     hi = 0;
-    auto asset = [&](const std::string& n) { return g_apkDir + "/assets/" + n; };
+    auto asset = [&](const std::string& n) -> std::string {
+        if (!g_overrideDir.empty()) {
+            std::string o = g_overrideDir + "/" + n;
+            FILE* fo = fopen(o.c_str(), "rb");
+            if (fo) { fclose(fo); return o; }
+        }
+        std::string sep = (g_apkDir.empty() || g_apkDir.back() == '/') ? "" : "/";
+        std::string p1 = g_apkDir + sep + n;
+        FILE* f1 = fopen(p1.c_str(), "rb");
+        if (f1) { fclose(f1); return p1; }
+        std::string p2 = g_apkDir + sep + "assets/" + n;
+        FILE* f2 = fopen(p2.c_str(), "rb");
+        if (f2) { fclose(f2); return p2; }
+        return p1;
+    };
     if (G->verbose) {
         fprintf(stderr, "[java] call %s(", name.c_str());
         for (size_t i = 0; i < a.size(); i++) {
@@ -691,7 +714,7 @@ bool Game::boot(const std::string& apkDir, const std::string& dataDir, int lcdW,
         if (g_dataDir.empty()) g_dataDir = dataDir;
     }
     G = this;
-    fprintf(stderr, "[boot] absApk=%s absData=%s\n", g_apkDir.c_str(), g_dataDir.c_str());
+    LOGI("[boot] absApk=%s absData=%s\n", g_apkDir.c_str(), g_dataDir.c_str());
     gm::init();
     gm::registerCpuDumper([]() {
         if (G) {
@@ -742,9 +765,10 @@ bool Game::boot(const std::string& apkDir, const std::string& dataDir, int lcdW,
     }
     if (soF) fclose(soF);
     if (!elf_load(soPath, img, [this](const std::string& n) { return resolveImport(cpu, n); })) {
-        fprintf(stderr, "[boot] Failed to load ELF: %s\n", soPath.c_str());
+        LOGE("[boot] Failed to load ELF: %s\n", soPath.c_str());
         return false;
     }
+    LOGI("[boot] ELF loaded successfully: %s\n", soPath.c_str());
     for (u32 f : img.initArray) { if (f && f != 0xFFFFFFFFu) cpu.call(f, {}); }
 
     { JObj o; o.k = 5; g_thiz = newObj(std::move(o)); }
@@ -756,16 +780,16 @@ bool Game::boot(const std::string& apkDir, const std::string& dataDir, int lcdW,
     std::string in = dataDir + "/internal", ex = dataDir + "/external";
     cpu.call(sym("Java_co_kr_eamobile_CletEntry_nativeInitFileStorage"), {g_env, g_thiz, stringObj(in), stringObj(ex)});
     {   // VFS: FileDescriptor object, long offset, long length (AAPCS: obj in r2, pad r3, then 64-bit values on stack)
-        FILE* f = fopen(vfsPath().c_str(), "rb"); if (!f) { fprintf(stderr, "[boot] missing %s\n", vfsPath().c_str()); return false; }
+        FILE* f = fopen(vfsPath().c_str(), "rb"); if (!f) { LOGE("[boot] missing %s\n", vfsPath().c_str()); return false; }
         fseek(f, 0, SEEK_END); g_vfsLen = (u64)ftell(f); fclose(f);
         JObj fd; fd.k = 4; u32 fdh = newObj(std::move(fd));
-        fprintf(stderr, "[boot] calling nativeInitVFS fdh=%u len=%llu...\n", fdh, (unsigned long long)g_vfsLen);
+        LOGI("[boot] calling nativeInitVFS fdh=%u len=%llu...\n", fdh, (unsigned long long)g_vfsLen);
         cpu.callv(sym("Java_co_kr_eamobile_CletEntry_nativeInitVFS"), {g_env, g_thiz, fdh, 0, 0, 0, (u32)g_vfsLen, (u32)(g_vfsLen >> 32)});
-        fprintf(stderr, "[boot] nativeInitVFS done.\n");
+        LOGI("[boot] nativeInitVFS done.\n");
     }
     cpu.callv(sym("Java_co_kr_eamobile_CletEntry_nativeInitAudioConfiguration"), {g_env, g_thiz, 0, 0});
     cpu.call(sym("Java_co_kr_eamobile_CletEntry_nativeStartApp"), {g_env, g_thiz});
-    fprintf(stderr, "[boot] game started (icount=%llu)\n", (unsigned long long)cpu.icount);
+    LOGI("[boot] game started (icount=%llu)\n", (unsigned long long)cpu.icount);
     return true;
 }
 
