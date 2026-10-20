@@ -5,209 +5,185 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 def rgb888_to_rgb565(r, g, b):
     return ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3)
 
-def encode_item(img, bpp, b0, max_colors, has_transparency=True, additive=False):
+def generate_logo_images():
+    scale = 4
+    W6, H6 = 112 * scale, 49 * scale
+    
+    font_path = 'C:/Windows/Fonts/georgiab.ttf'
+    if not os.path.exists(font_path):
+        font_path = 'C:/Windows/Fonts/timesbd.ttf'
+    if not os.path.exists(font_path):
+        font_path = '/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf'
+        
+    f_heroes = ImageFont.truetype(font_path, int(18 * scale))
+    f_lore = ImageFont.truetype(font_path, int(22 * scale))
+
+    mask6 = Image.new('L', (W6, H6), 0)
+    d6 = ImageDraw.Draw(mask6)
+
+    h_chars = list('HEROES')
+    h_widths = [f_heroes.getbbox(c)[2] - f_heroes.getbbox(c)[0] for c in h_chars]
+    hx = int(3 * scale)
+    hy = int(2 * scale)
+    cur_x = hx
+    for i, c in enumerate(h_chars):
+        d6.text((cur_x, hy), c, font=f_heroes, fill=255)
+        cur_x += h_widths[i] + int(2.2 * scale)
+
+    l_chars = list('LORE')
+    l_widths = [f_lore.getbbox(c)[2] - f_lore.getbbox(c)[0] for c in l_chars]
+    lx = int(5 * scale)
+    ly = int(22 * scale)
+    cur_x = lx
+    for i, c in enumerate(l_chars):
+        d6.text((cur_x, ly), c, font=f_lore, fill=255)
+        cur_x += l_widths[i] + int(5.0 * scale)
+
+    # Metallic chrome gradient with warm highlights
+    grad = Image.new('RGBA', (W6, H6), (0, 0, 0, 0))
+    gdraw = ImageDraw.Draw(grad)
+    for y in range(H6):
+        if y < ly:
+            rel_y = (y - hy) / float(max(1, ly - hy))
+        else:
+            rel_y = (y - ly) / float(max(1, H6 - ly))
+        rel_y = max(0.0, min(1.0, rel_y))
+        if rel_y < 0.35:
+            v = int(255 - (rel_y / 0.35) * 30)
+            c = (v, v, int(v * 0.96), 255)
+        elif rel_y < 0.50:
+            t = (rel_y - 0.35) / 0.15
+            v = int(225 - t * 85)
+            c = (v, v, int(v * 0.98), 255)
+        elif rel_y < 0.55:
+            t = (rel_y - 0.50) / 0.05
+            v = int(95 + t * 90)
+            c = (v, v, v + 12, 255)
+        elif rel_y < 0.85:
+            t = (rel_y - 0.55) / 0.30
+            v = int(185 + t * 65)
+            c = (v, v, min(255, v + 6), 255)
+        else:
+            t = (rel_y - 0.85) / 0.15
+            v = int(250 - t * 60)
+            c = (v, v, v, 255)
+        gdraw.line([(0, y), (W6, y)], fill=c)
+
+    # 1px bevel border on letters
+    border_mask = mask6.filter(ImageFilter.MaxFilter(int(1 * scale) * 2 + 1))
+    im6_bordered = Image.new('RGBA', (W6, H6), (0, 0, 0, 0))
+    edge_layer = Image.new('RGBA', (W6, H6), (28, 35, 28, 255))
+    im6_bordered.paste(edge_layer, (0, 0), border_mask)
+    im6_bordered.paste(grad, (0, 0), mask6)
+    item6 = im6_bordered.resize((112, 49), Image.LANCZOS)
+
+    # Item 5: Drop shadow & outline layer (120x57, offset +4, +4)
+    W5, H5 = 120 * scale, 57 * scale
+    mask5 = Image.new('L', (W5, H5), 0)
+    mask5.paste(border_mask, (4 * scale, 4 * scale))
+    shadow_mask = mask5.filter(ImageFilter.MaxFilter(int(2.4 * scale) * 2 + 1))
+    shadow_layer = Image.new('RGBA', (W5, H5), (0, 0, 0, 0))
+    shadow_layer.paste((0, 0, 0, 255), (0, 0), shadow_mask)
+    item5 = shadow_layer.resize((120, 57), Image.LANCZOS)
+
+    # Clean alpha channels
+    arr6 = item6.load()
+    for y in range(49):
+        for x in range(112):
+            if arr6[x, y][3] < 80:
+                arr6[x, y] = (0, 0, 0, 0)
+            else:
+                arr6[x, y] = (arr6[x, y][0], arr6[x, y][1], arr6[x, y][2], 255)
+
+    arr5 = item5.load()
+    for y in range(57):
+        for x in range(120):
+            if arr5[x, y][3] < 60:
+                arr5[x, y] = (0, 0, 0, 0)
+            else:
+                arr5[x, y] = (0, 0, 0, 255)
+
+    return item5, item6
+
+def encode_item(img, trans_idx=115, total_pal=122):
     w, h = img.size
     pixels = img.load()
-    palette = []
     color_map = {}
+    palette = []
     
-    if has_transparency and not additive:
-        palette.append(0xF81F) # Magenta transparency key in HLE/midas
-        color_map['TRANS'] = 0
-        
     for y in range(h):
         for x in range(w):
             p = pixels[x, y]
-            if has_transparency and p[3] < 128:
+            if p[3] < 128:
                 continue
             c16 = rgb888_to_rgb565(p[0], p[1], p[2])
-            if has_transparency and not additive and c16 == 0xF81F:
-                c16 = 0xF81E # Prevent accidental key collision
+            if c16 == 0xF81F:
+                c16 = 0xF81E
             if c16 not in color_map:
-                if len(palette) < max_colors:
+                if len(palette) < trans_idx:
                     color_map[c16] = len(palette)
                     palette.append(c16)
                     
-    while len(palette) < 2:
-        palette.append(0)
+    while len(palette) < trans_idx:
+        palette.append(0x0000)
         
-    pal_count = len(palette)
-    header = struct.pack('<BBHH', b0, pal_count, w, h)
+    palette.append(0xF81F) # Trans key at trans_idx
     
-    pal_bytes = bytearray()
-    for c in palette:
-        pal_bytes += struct.pack('<H', c)
+    while len(palette) < total_pal:
+        palette.append(0xFFFF)
         
     def find_best_idx(c16):
         if c16 in color_map:
             return color_map[c16]
-        r1 = (c16 >> 11) & 0x1F
-        g1 = (c16 >> 5) & 0x3F
-        b1 = c16 & 0x1F
-        best_d = 999999
-        best_i = 0
-        start_i = 1 if (has_transparency and not additive) else 0
-        for i in range(start_i, len(palette)):
+        r1, g1, b1 = (c16 >> 11) & 0x1F, (c16 >> 5) & 0x3F, c16 & 0x1F
+        best_d, best_i = 999999, 0
+        for i in range(trans_idx):
             pal_c = palette[i]
-            r2 = (pal_c >> 11) & 0x1F
-            g2 = (pal_c >> 5) & 0x3F
-            b2 = pal_c & 0x1F
+            r2, g2, b2 = (pal_c >> 11) & 0x1F, (pal_c >> 5) & 0x3F, pal_c & 0x1F
             d = (r1 - r2)**2 + (g1 - g2)**2 + (b1 - b2)**2
             if d < best_d:
                 best_d = d
                 best_i = i
         return best_i
 
+    pal_bytes = bytearray()
+    for c in palette:
+        pal_bytes += struct.pack('<H', c)
+        
     pixel_bytes = bytearray()
-    if bpp == 8:
-        for y in range(h):
-            for x in range(w):
-                p = pixels[x, y]
-                if has_transparency and p[3] < 128:
-                    pixel_bytes.append(0)
-                else:
-                    c16 = rgb888_to_rgb565(p[0], p[1], p[2])
-                    if has_transparency and not additive and c16 == 0xF81F: c16 = 0xF81E
-                    pixel_bytes.append(find_best_idx(c16))
-    elif bpp == 4:
-        row_stride = (w + 1) // 2
-        for y in range(h):
-            row = bytearray(row_stride)
-            for x in range(w):
-                p = pixels[x, y]
-                if has_transparency and p[3] < 128:
-                    idx = 0
-                else:
-                    c16 = rgb888_to_rgb565(p[0], p[1], p[2])
-                    idx = find_best_idx(c16) & 0x0F
-                if x % 2 == 0:
-                    row[x // 2] |= (idx & 0x0F)
-                else:
-                    row[x // 2] |= ((idx & 0x0F) << 4)
-            pixel_bytes += row
-            
+    for y in range(h):
+        for x in range(w):
+            p = pixels[x, y]
+            if p[3] < 128:
+                pixel_bytes.append(trans_idx)
+            else:
+                c16 = rgb888_to_rgb565(p[0], p[1], p[2])
+                if c16 == 0xF81F: c16 = 0xF81E
+                pixel_bytes.append(find_best_idx(c16))
+                
+    header = struct.pack('<BBHH', 0x18, len(palette), w, h)
     return header + pal_bytes + pixel_bytes
 
-def generate_heroes_lore_logo():
-    W, H = 120, 57
-    scale = 4
-    SW, SH = W * scale, H * scale
-    
-    font_path = 'C:/Windows/Fonts/georgiab.ttf'
-    f_h = ImageFont.truetype(font_path, int(23 * scale))
-    f_l = ImageFont.truetype(font_path, int(23 * scale))
-    
-    t1 = 'HEROES'
-    t2 = 'LORE'
-    
-    b1 = f_h.getbbox(t1)
-    b2 = f_l.getbbox(t2)
-    w1, h1 = b1[2] - b1[0], b1[3] - b1[1]
-    w2, h2 = b2[2] - b2[0], b2[3] - b2[1]
-    
-    x1 = (SW - w1) // 2
-    y1 = 0
-    x2 = (SW - w2) // 2
-    y2 = int(26.5 * scale)
-    
-    mask = Image.new('L', (SW, SH), 0)
-    mdraw = ImageDraw.Draw(mask)
-    mdraw.text((x1, y1), t1, font=f_h, fill=255)
-    mdraw.text((x2, y2), t2, font=f_l, fill=255)
-    
-    outline_mask = mask.filter(ImageFilter.MaxFilter(7))
-    
-    canvas = Image.new('RGBA', (SW, SH), (0, 0, 0, 0))
-    canvas.paste((0, 0, 0, 255), (0, 0), outline_mask)
-    
-    grad = Image.new('RGBA', (SW, SH), (0, 0, 0, 0))
-    gdraw = ImageDraw.Draw(grad)
-    for y in range(SH):
-        line_y = y if y < y2 else (y - y2)
-        lh = float(y2 if y < y2 else (SH - y2))
-        pos = max(0.0, min(1.0, line_y / lh))
-        
-        if pos < 0.4:
-            val = int(255 - pos / 0.4 * 40)
-            col = (val, val, min(255, val + 15), 255)
-        elif pos < 0.52:
-            col = (100, 110, 130, 255)
-        else:
-            val = int(185 + (pos - 0.52) / 0.48 * 60)
-            col = (val, val, min(255, val + 10), 255)
-        gdraw.line([(0, y), (SW, y)], fill=col)
-        
-    canvas.paste(grad, (0, 0), mask)
-    final = canvas.resize((W, H), Image.LANCZOS)
-    
-    f_arr = final.load()
-    for y in range(H):
-        for x in range(W):
-            p = f_arr[x, y]
-            if p[3] < 100:
-                f_arr[x, y] = (0, 0, 0, 0)
-            elif p[3] < 200 and sum(p[:3]) < 100:
-                f_arr[x, y] = (0, 0, 0, 255)
-    return final
+def clear_additive_item(orig_item):
+    b0, pal_count, w, h = struct.unpack('<BBHH', orig_item[:6])
+    pal_end = 6 + pal_count * 2
+    header_and_pal = orig_item[:pal_end]
+    bpp = 8 if (b0 & 0x08) else 4
+    if bpp == 8:
+        cleared_pixels = bytearray(w * h)
+    else:
+        row_stride = (w + 1) // 2
+        cleared_pixels = bytearray(row_stride * h)
+    return header_and_pal + cleared_pixels
 
-def generate_pixel_subtitle():
-    W, H = 56, 14
-    im = Image.new('RGB', (W, H), (0, 0, 0))
-    draw = ImageDraw.Draw(im)
-    
-    FONT = {
-        'A': [' # ', '# #', '###', '# #', '# #'],
-        'B': ['## ', '# #', '## ', '# #', '## '],
-        'C': [' ##', '#  ', '#  ', '#  ', ' ##'],
-        'D': ['## ', '# #', '# #', '# #', '## '],
-        'E': ['###', '#  ', '## ', '#  ', '###'],
-        'F': ['###', '#  ', '## ', '#  ', '#  '],
-        'G': [' ##', '#  ', '# #', '# #', ' ##'],
-        'H': ['# #', '# #', '###', '# #', '# #'],
-        'I': ['###', ' # ', ' # ', ' # ', '###'],
-        'K': ['# #', '## ', '#  ', '## ', '# #'],
-        'L': ['#  ', '#  ', '#  ', '#  ', '###'],
-        'M': ['# #', '###', '# #', '# #', '# #'],
-        'N': ['## ', '# #', '# #', '# #', '# #'],
-        'O': [' # ', '# #', '# #', '# #', ' # '],
-        'P': ['## ', '# #', '## ', '#  ', '#  '],
-        'R': ['## ', '# #', '## ', '# #', '# #'],
-        'S': [' ##', '#  ', ' # ', '  #', '## '],
-        'T': ['###', ' # ', ' # ', ' # ', ' # '],
-        'U': ['# #', '# #', '# #', '# #', '###'],
-        'V': ['# #', '# #', '# #', '# #', ' # '],
-        ' ': ['   ', '   ', '   ', '   ', '   '],
-    }
-    
-    def draw_text(txt, start_x, start_y):
-        cur_x = start_x
-        for ch in txt:
-            glyph = FONT.get(ch, FONT[' '])
-            for r, row in enumerate(glyph):
-                for c, val in enumerate(row):
-                    if val == '#':
-                        draw.point((cur_x + c, start_y + r), fill=(255, 255, 255))
-            cur_x += len(glyph[0]) + 1
-            
-    x1 = (W - 43) // 2
-    draw_text('COVENANT OF', x1, 1)
-    
-    x2 = (W - 31) // 2
-    draw_text('DARKNESS', x2, 8)
-    return im
-
-def generate_button(w, h, text):
-    new_btn = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(new_btn)
-    draw.rounded_rectangle([2, 1, w-3, h-2], radius=8, fill=(16, 20, 30, 255), outline=(90, 100, 120, 255), width=1)
-    font = ImageFont.truetype('C:/Windows/Fonts/arialbd.ttf', 11)
-    bbox = font.getbbox(text)
-    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    tx = (w - tw) // 2
-    ty = (h - th) // 2 - 1
-    draw.text((tx+1, ty+1), text, font=font, fill=(0, 0, 0, 255))
-    draw.text((tx, ty), text, font=font, fill=(240, 245, 255, 255))
-    return new_btn
+def clear_item_19(orig_item):
+    b0, pal_count, w, h = struct.unpack('<BBHH', orig_item[:6])
+    pal_end = 6 + pal_count * 2
+    header_and_pal = orig_item[:pal_end]
+    row_stride = (w + 1) // 2
+    # Item 19 transparent index is 12 (0xCC in 4bpp pairs)
+    cleared_pixels = bytearray([0xCC] * (row_stride * h))
+    return header_and_pal + cleared_pixels
 
 def main():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -224,17 +200,19 @@ def main():
         items.append(orig[offset:offset+sz])
         offset += sz
 
-    im5 = generate_heroes_lore_logo()
-    im6 = Image.new('RGBA', (112, 49), (0, 0, 0, 0))
-    im8 = generate_button(94, 25, 'TOUCH SCREEN')
-    im9 = generate_button(86, 24, 'PRESS START')
-    im19 = generate_pixel_subtitle()
-
-    items[5] = encode_item(im5, bpp=8, b0=0x18, max_colors=122, has_transparency=True)
-    items[6] = encode_item(im6, bpp=8, b0=0x18, max_colors=10, has_transparency=True)
-    items[8] = encode_item(im8, bpp=4, b0=0x14, max_colors=16, has_transparency=True)
-    items[9] = encode_item(im9, bpp=4, b0=0x14, max_colors=16, has_transparency=True)
-    items[19] = encode_item(im19, bpp=4, b0=0x04, max_colors=16, has_transparency=False, additive=True)
+    # Generate custom western HEROES LORE logo
+    im5, im6 = generate_logo_images()
+    items[5] = encode_item(im5, trans_idx=117)
+    items[6] = encode_item(im6, trans_idx=115)
+    
+    # Items 14-18: Korean subtitle characters ("칠흑의 계약") -> clear in additive mode
+    for i in range(14, 19):
+        items[i] = clear_additive_item(items[i])
+        
+    # Item 19: Korean subtitle banner mask -> set to transparent index 12
+    items[19] = clear_item_19(items[19])
+    
+    # Items 8 and 9: keep authentic original "Tap to Continue" from reference title.mgr
 
     out = bytearray()
     out += struct.pack('<I', len(items))
