@@ -9,22 +9,18 @@
 #ifdef _WIN32
 #include <io.h>
 #include <direct.h>
+#ifndef O_BINARY
+#define O_BINARY _O_BINARY
+#endif
 #else
 #include <unistd.h>
-#define _O_BINARY 0
-#define _access access
-#define _mkdir(p) mkdir(p, 0755)
-#define _open open
-#define _close close
-#define _read read
-#define _write write
-#define _lseek lseek
-#define _S_IREAD S_IRUSR
-#define _S_IWRITE S_IWUSR
+#include <sys/time.h>
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 #endif
 #include <map>
 #include <sys/stat.h>
-#include <sys/timeb.h>
 
 // ---------------------------------------------------------------- globals
 static Game* G = nullptr;
@@ -180,22 +176,64 @@ static void glDraw(u32 mode, u32 first, u32 count) {
         fprintf(stderr, "   tex sample [0,0]=0x%08x [cx,cy]=0x%08x [100,100]=0x%08x\n", texel(t, 0, 0), texel(t, cx, cy), texel(t, 100, 100));
     }
     if (dw <= 0 || dh <= 0) return;
-    bool alpha = bppOf(t.fmt, t.type) == 4;
-    for (int y = std::max(dy0, 0); y < std::min(dy1, s.h); y++) {
-        float fv = v0 + ((y - dy0) + 0.5f) / dh * (v1 - v0);
-        int ty = (int)floorf(fv * t.h);
-        for (int x = std::max(dx0, 0); x < std::min(dx1, s.w); x++) {
-            float fu = u0 + ((x - dx0) + 0.5f) / dw * (u1 - u0);
-            int tx = (int)floorf(fu * t.w);
-            u32 c = texel(t, tx, ty);
-            u32& dst = s.px[(size_t)y * s.w + x];
-            if (alpha && (c >> 24) != 0xFF) {
-                u32 a = c >> 24;
-                u32 r = (((c >> 16) & 255) * a + ((dst >> 16) & 255) * (255 - a)) / 255;
-                u32 g = (((c >> 8) & 255) * a + ((dst >> 8) & 255) * (255 - a)) / 255;
-                u32 b = ((c & 255) * a + (dst & 255) * (255 - a)) / 255;
-                dst = 0xFF000000u | (r << 16) | (g << 8) | b;
-            } else dst = c | 0xFF000000u;
+    int bpp = bppOf(t.fmt, t.type);
+    int yStart = std::max(dy0, 0), yEnd = std::min(dy1, s.h);
+    int xStart = std::max(dx0, 0), xEnd = std::min(dx1, s.w);
+    if (xStart >= xEnd || yStart >= yEnd || t.d.empty()) return;
+
+    float stepU = ((u1 - u0) / dw) * (float)t.w;
+    float stepV = ((v1 - v0) / dh) * (float)t.h;
+
+    int32_t du_fp = (int32_t)(stepU * 65536.0f);
+    int32_t dv_fp = (int32_t)(stepV * 65536.0f);
+
+    int32_t v_curr = (int32_t)((v0 * (float)t.h + ((yStart - dy0) + 0.5f) * stepV) * 65536.0f);
+    int32_t u_base = (int32_t)((u0 * (float)t.w + ((xStart - dx0) + 0.5f) * stepU) * 65536.0f);
+
+    const u8* texData = t.d.data();
+    int tw = t.w, th = t.h;
+
+    for (int y = yStart; y < yEnd; y++) {
+        int ty = v_curr >> 16;
+        v_curr += dv_fp;
+        if ((unsigned)ty >= (unsigned)th) continue;
+
+        int32_t u_curr = u_base;
+        u32* dstRow = &s.px[(size_t)y * s.w];
+        const u8* rowPtr = texData + ((size_t)ty * tw) * bpp;
+
+        for (int x = xStart; x < xEnd; x++) {
+            int tx = u_curr >> 16;
+            u_curr += du_fp;
+            if ((unsigned)tx >= (unsigned)tw) continue;
+
+            u32 c;
+            if (bpp == 4) {
+                const u8* p = rowPtr + tx * 4;
+                u32 a = p[3];
+                if (a == 0) continue;
+                c = ((u32)a << 24) | ((u32)p[0] << 16) | ((u32)p[1] << 8) | p[2];
+                if (a != 255) {
+                    u32 dst = dstRow[x];
+                    u32 invA = 255 - a;
+                    u32 r = (((c >> 16) & 255) * a + ((dst >> 16) & 255) * invA) / 255;
+                    u32 g = (((c >> 8) & 255) * a + ((dst >> 8) & 255) * invA) / 255;
+                    u32 b = ((c & 255) * a + (dst & 255) * invA) / 255;
+                    dstRow[x] = 0xFF000000u | (r << 16) | (g << 8) | b;
+                    continue;
+                }
+            } else if (bpp == 2 && t.type == 0x8363) {
+                const u8* p = rowPtr + tx * 2;
+                u16 v = p[0] | (p[1] << 8);
+                u32 r = (v >> 11) & 31, g = (v >> 5) & 63, b = v & 31;
+                c = 0xFF000000u | (((r << 3) | (r >> 2)) << 16) | (((g << 2) | (g >> 4)) << 8) | ((b << 3) | (b >> 2));
+            } else if (bpp == 3) {
+                const u8* p = rowPtr + tx * 3;
+                c = 0xFF000000u | ((u32)p[0] << 16) | ((u32)p[1] << 8) | p[2];
+            } else {
+                c = 0xFF000000u;
+            }
+            dstRow[x] = c | 0xFF000000u;
         }
     }
     s.draws++;
@@ -229,7 +267,7 @@ static u32 javaStatic(const std::string& name, const std::string& sig, std::vect
         for (size_t i = 0; i < a.size(); i++) {
             JObj* o = obj((u32)a[i]);
             if (o && o->k == 2) fprintf(stderr, "\"%s\"%s", o->s.c_str(), i + 1 < a.size() ? ", " : "");
-            else fprintf(stderr, "0x%llx%s", a[i], i + 1 < a.size() ? ", " : "");
+            else fprintf(stderr, "0x%llx%s", (unsigned long long)a[i], i + 1 < a.size() ? ", " : "");
         }
         fprintf(stderr, ")\n");
     }
@@ -375,11 +413,15 @@ static void setupJni(Cpu& cpu) {
     g_jni[184] = [](Cpu& c) {                                                                    // GetByteArrayElements
         JObj* o = obj(c.r[1]); u32 n = o ? (u32)o->b.size() : 0; u32 p = gm::malloc_(n + 1);
         if (n) memcpy(gm::ptr(p, n), o->b.data(), n);
-        if (c.r[2]) gm::w8(c.r[2], 1); c.r[0] = p; };
+        if (c.r[2]) { gm::w8(c.r[2], 1); }
+        c.r[0] = p;
+    };
     g_jni[192] = [](Cpu& c) {                                                                    // ReleaseByteArrayElements(env, arr, elems, mode)
         JObj* o = obj(c.r[1]);
         if (o && c.r[3] != 2 && !o->b.empty()) memcpy(o->b.data(), gm::ptr(c.r[2], (u32)o->b.size()), o->b.size());
-        if (c.r[3] != 1) gm::free_(c.r[2]); c.r[0] = 0; };
+        if (c.r[3] != 1) { gm::free_(c.r[2]); }
+        c.r[0] = 0;
+    };
     g_jni[200] = [](Cpu& c) {                                                                    // GetByteArrayRegion(env, arr, start, len, buf)
         JObj* o = obj(c.r[1]); u32 buf = c.arg(4);
         if (o && c.r[3]) { if (c.r[2] + c.r[3] > o->b.size()) o->b.resize(c.r[2] + c.r[3]); memcpy(gm::ptr(buf, c.r[3]), o->b.data() + c.r[2], c.r[3]); }
@@ -399,11 +441,15 @@ static std::map<std::string, std::function<void(Cpu&)>> g_lib;
 
 static u32 hostFdOpen(const std::string& path, u32 flags) {
     int wf = 0, acc = flags & 3;
-    wf |= acc == 0 ? _O_RDONLY : acc == 1 ? _O_WRONLY : _O_RDWR;
-    if (flags & 0x40) wf |= _O_CREAT;
-    if (flags & 0x200) wf |= _O_TRUNC;
-    if (flags & 0x400) wf |= _O_APPEND;
-    return (u32)_open(path.c_str(), wf | _O_BINARY, _S_IREAD | _S_IWRITE);
+    wf |= (acc == 0 ? O_RDONLY : acc == 1 ? O_WRONLY : O_RDWR);
+    if (flags & 0x40) wf |= O_CREAT;
+    if (flags & 0x200) wf |= O_TRUNC;
+    if (flags & 0x400) wf |= O_APPEND;
+#ifdef _WIN32
+    return (u32)_open(path.c_str(), wf | O_BINARY, _S_IREAD | _S_IWRITE);
+#else
+    return (u32)open(path.c_str(), wf | O_BINARY, 0666);
+#endif
 }
 
 static void setupLib() {
@@ -470,29 +516,84 @@ static void setupLib() {
     L["inet_addr"] = [](Cpu& c) { c.r[0] = 0xFFFFFFFFu; };
     // ---- file system
     L["open"] = [](Cpu& c) { c.r[0] = hostFdOpen(gm::cstr(c.r[0]), c.r[1]); };
-    L["close"] = [](Cpu& c) { c.r[0] = c.r[0] >= (u32)VFS_FAKE_FD ? 0 : (u32)_close((int)c.r[0]); };
-    L["read"] = [](Cpu& c) { c.r[0] = (u32)_read((int)c.r[0], gm::ptr(c.r[1], c.r[2] ? c.r[2] : 1), c.r[2]); };
-    L["write"] = [](Cpu& c) { c.r[0] = (u32)_write((int)c.r[0], gm::ptr(c.r[1], c.r[2] ? c.r[2] : 1), c.r[2]); };
-    L["lseek"] = [](Cpu& c) { c.r[0] = (u32)_lseek((int)c.r[0], (long)c.r[1], (int)c.r[2]); };
+    L["close"] = [](Cpu& c) {
+        if (c.r[0] >= (u32)VFS_FAKE_FD) { c.r[0] = 0; return; }
+#ifdef _WIN32
+        c.r[0] = (u32)_close((int)c.r[0]);
+#else
+        c.r[0] = (u32)close((int)c.r[0]);
+#endif
+    };
+    L["read"] = [](Cpu& c) {
+#ifdef _WIN32
+        c.r[0] = (u32)_read((int)c.r[0], gm::ptr(c.r[1], c.r[2] ? c.r[2] : 1), c.r[2]);
+#else
+        c.r[0] = (u32)read((int)c.r[0], gm::ptr(c.r[1], c.r[2] ? c.r[2] : 1), c.r[2]);
+#endif
+    };
+    L["write"] = [](Cpu& c) {
+#ifdef _WIN32
+        c.r[0] = (u32)_write((int)c.r[0], gm::ptr(c.r[1], c.r[2] ? c.r[2] : 1), c.r[2]);
+#else
+        c.r[0] = (u32)write((int)c.r[0], gm::ptr(c.r[1], c.r[2] ? c.r[2] : 1), c.r[2]);
+#endif
+    };
+    L["lseek"] = [](Cpu& c) {
+#ifdef _WIN32
+        c.r[0] = (u32)_lseek((int)c.r[0], (long)c.r[1], (int)c.r[2]);
+#else
+        c.r[0] = (u32)lseek((int)c.r[0], (off_t)c.r[1], (int)c.r[2]);
+#endif
+    };
     L["dup"] = [](Cpu& c) {
         u32 old = c.r[0];
+#ifdef _WIN32
         c.r[0] = c.r[0] >= (u32)VFS_FAKE_FD ? c.r[0] + 1 : (u32)_dup((int)c.r[0]);
+#else
+        c.r[0] = c.r[0] >= (u32)VFS_FAKE_FD ? c.r[0] + 1 : (u32)dup((int)c.r[0]);
+#endif
         if (G->verbose) fprintf(stderr, "[vfs] dup(fd=%u) -> %u\n", old, c.r[0]);
     };
-    L["access"] = [](Cpu& c) { c.r[0] = (u32)_access(gm::cstr(c.r[0]).c_str(), (int)(c.r[1] & 6)); };
-    L["mkdir"] = [](Cpu& c) { c.r[0] = (u32)_mkdir(gm::cstr(c.r[0]).c_str()); };
-    L["rmdir"] = [](Cpu& c) { c.r[0] = (u32)_rmdir(gm::cstr(c.r[0]).c_str()); };
+    L["access"] = [](Cpu& c) {
+#ifdef _WIN32
+        c.r[0] = (u32)_access(gm::cstr(c.r[0]).c_str(), (int)(c.r[1] & 6));
+#else
+        c.r[0] = (u32)access(gm::cstr(c.r[0]).c_str(), (int)(c.r[1] & 6));
+#endif
+    };
+    L["mkdir"] = [](Cpu& c) {
+#ifdef _WIN32
+        c.r[0] = (u32)_mkdir(gm::cstr(c.r[0]).c_str());
+#else
+        c.r[0] = (u32)mkdir(gm::cstr(c.r[0]).c_str(), 0755);
+#endif
+    };
+    L["rmdir"] = [](Cpu& c) {
+#ifdef _WIN32
+        c.r[0] = (u32)_rmdir(gm::cstr(c.r[0]).c_str());
+#else
+        c.r[0] = (u32)rmdir(gm::cstr(c.r[0]).c_str());
+#endif
+    };
     L["unlink"] = [](Cpu& c) { c.r[0] = (u32)remove(gm::cstr(c.r[0]).c_str()); };
     L["rename"] = [](Cpu& c) { c.r[0] = (u32)rename(gm::cstr(c.r[0]).c_str(), gm::cstr(c.r[1]).c_str()); };
     L["chdir"] = [](Cpu& c) { c.r[0] = 0; };
     L["stat"] = [](Cpu& c) {
+        std::string path = gm::cstr(c.r[0]);
+#ifdef _WIN32
         struct _stat64i32 st;
-        if (_stat64i32(gm::cstr(c.r[0]).c_str(), &st) != 0) { c.r[0] = (u32)-1; return; }
-        u8* b = gm::ptr(c.r[1], 104); memset(b, 0, 104);
+        if (_stat64i32(path.c_str(), &st) != 0) { c.r[0] = (u32)-1; return; }
         u32 mode = (st.st_mode & _S_IFDIR) ? 040755 : 0100644;
+#else
+        struct stat st;
+        if (stat(path.c_str(), &st) != 0) { c.r[0] = (u32)-1; return; }
+        u32 mode = S_ISDIR(st.st_mode) ? 040755 : 0100644;
+#endif
+        u8* b = gm::ptr(c.r[1], 104); memset(b, 0, 104);
         gm::w32(c.r[1] + 16, mode); gm::w32(c.r[1] + 48, (u32)st.st_size); gm::w32(c.r[1] + 52, 0);
         gm::w32(c.r[1] + 72, (u32)st.st_atime); gm::w32(c.r[1] + 80, (u32)st.st_mtime); gm::w32(c.r[1] + 88, (u32)st.st_ctime);
-        c.r[0] = 0; };
+        c.r[0] = 0;
+    };
     L["fdopen"] = [](Cpu& c) {
         u32 guestFd = c.r[0];
         if (guestFd < (u32)VFS_FAKE_FD) { c.r[0] = 0; return; }
@@ -626,7 +727,14 @@ bool Game::boot(const std::string& apkDir, const std::string& dataDir, int lcdW,
 }
 
 void Game::frame() {
-    g_simTimeMs += 16;
+    static auto s_lastTime = std::chrono::steady_clock::now();
+    static bool s_first = true;
+    if (s_first) { s_lastTime = std::chrono::steady_clock::now(); s_first = false; }
+    auto now = std::chrono::steady_clock::now();
+    auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(now - s_lastTime).count();
+    s_lastTime = now;
+    if (elapsedMs <= 0 || elapsedMs > 50) elapsedMs = 16;
+    g_simTimeMs += elapsedMs;
     cpu.call(sym("Java_co_kr_eamobile_CletEntry_nativeLoop"), {g_env, g_thiz});
 }
 void Game::key(int type, int k) { cpu.call(sym("Java_co_kr_eamobile_CletEntry_nativeKeyHandleEvent"), {g_env, g_thiz, (u32)type, (u32)k, 0}); }

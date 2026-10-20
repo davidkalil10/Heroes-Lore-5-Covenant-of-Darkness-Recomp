@@ -100,150 +100,99 @@ void Cpu::step() {
         return;
     }
     u32 ins = gm::r32(pc);
-    if (pc == 0x00100000 + 0x1417a4) { // StaticUtil::LoadRes(char* path, int* outSize)
-        u32 pathPtr = r[0];
-        u32 outSizePtr = r[1];
-        std::string p = (pathPtr >= 0x1000 && pathPtr < gm::MEM_SIZE) ? gm::cstr(pathPtr) : "";
-        std::string overridePath = "assets_override" + (p.empty() || p[0] != '/' ? "/" + p : p);
-        FILE* f = fopen(overridePath.c_str(), "rb");
-        if (!f && !g_overrideDir.empty()) {
-            overridePath = g_overrideDir + (p.empty() || p[0] != '/' ? "/" + p : p);
-            f = fopen(overridePath.c_str(), "rb");
-        }
-        if (f) {
-            fseek(f, 0, SEEK_END);
-            long sz = ftell(f);
-            fseek(f, 0, SEEK_SET);
-            u32 guestBuf = gm::malloc_((u32)sz + 4);
-            size_t n = fread(gm::ptr(guestBuf, (u32)sz), 1, sz, f);
-            fclose(f);
-            if (outSizePtr >= 0x1000 && outSizePtr < gm::MEM_SIZE) {
-                gm::w32(outSizePtr, (u32)n);
+    switch (pc) {
+        case 0x00100000 + 0x1417a4: { // StaticUtil::LoadRes(char* path, int* outSize)
+            u32 pathPtr = r[0];
+            u32 outSizePtr = r[1];
+            std::string p = (pathPtr >= 0x1000 && pathPtr < gm::MEM_SIZE) ? gm::cstr(pathPtr) : "";
+            std::string overridePath = "assets_override" + (p.empty() || p[0] != '/' ? "/" + p : p);
+            FILE* f = fopen(overridePath.c_str(), "rb");
+            if (!f && !g_overrideDir.empty()) {
+                overridePath = g_overrideDir + (p.empty() || p[0] != '/' ? "/" + p : p);
+                f = fopen(overridePath.c_str(), "rb");
             }
-            fprintf(stderr, "[OVERRIDE] Loaded '%s' from host disk (%ld bytes, guestPtr=0x%08x)\n", p.c_str(), sz, guestBuf);
-            r[0] = guestBuf;
-            r[15] = r[14]; // return to caller
-            return;
-        } else {
-            fprintf(stderr, "[LoadRes] '%s' (fallback to VFS)\n", p.c_str());
+            if (f) {
+                fseek(f, 0, SEEK_END);
+                long sz = ftell(f);
+                fseek(f, 0, SEEK_SET);
+                u32 guestBuf = gm::malloc_((u32)sz + 4);
+                size_t n = fread(gm::ptr(guestBuf, (u32)sz), 1, sz, f);
+                fclose(f);
+                if (outSizePtr >= 0x1000 && outSizePtr < gm::MEM_SIZE) {
+                    gm::w32(outSizePtr, (u32)n);
+                }
+                fprintf(stderr, "[OVERRIDE] Loaded '%s' from host disk (%ld bytes, guestPtr=0x%08x)\n", p.c_str(), sz, guestBuf);
+                r[0] = guestBuf;
+                r[15] = r[14]; // return to caller
+                return;
+            } else {
+                fprintf(stderr, "[LoadRes] '%s' (fallback to VFS)\n", p.c_str());
+            }
+            break;
         }
-    }
-    if (pc == 0x00100000 + 0x11b348) { // StateMainMenu::endProcess -> bypass network check
-        u32 stateMainMenu = r[4];
-        fprintf(stderr, "[BYPASS] Intercepted network check! Loading Title Screen directly (this=0x%08x)\n", stateMainMenu);
-        // Load LogoSprite (2 = Title Screen!)
-        call(0x00100000 + 0x11e368, {stateMainMenu, 2});
-        // Set State 3 (DrawTitle!)
-        call(0x00100000 + 0x11fbe8, {stateMainMenu, 3});
+        case 0x00100000 + 0x11b348: { // StateMainMenu::endProcess -> bypass network check
+            u32 stateMainMenu = r[4];
+            fprintf(stderr, "[BYPASS] Intercepted network check! Loading Title Screen directly (this=0x%08x)\n", stateMainMenu);
+            // Load LogoSprite (2 = Title Screen!)
+            call(0x00100000 + 0x11e368, {stateMainMenu, 2});
+            // Set State 3 (DrawTitle!)
+            call(0x00100000 + 0x11fbe8, {stateMainMenu, 3});
 
-        // Pop {r4, r5, r6, r7, r8, lr} and return to caller of endProcess
-        u32 sp = r[13];
-        r[4] = gm::r32(sp);
-        r[5] = gm::r32(sp + 4);
-        r[6] = gm::r32(sp + 8);
-        r[7] = gm::r32(sp + 12);
-        r[8] = gm::r32(sp + 16);
-        u32 lr = gm::r32(sp + 20);
-        r[13] = sp + 24;
-        r[15] = lr;
-        return;
-    }
-    if (pc == 0x00100000 + 0x11fe94) { // StateMainMenu::KeyTitle(int)
-        fprintf(stderr, "[KEY_TITLE] Called key=%d this=0x%08x substate=%d\n", (int)r[1], r[0], (int)gm::r8(r[0] + 0xe));
-    }
-    if (pc == 0x00100000 + 0x11feac) { // StateMainMenu::KeyTitle: cmp r1, #1
-        r[1] = 1; // force substate check to pass
-    }
-    if (pc == 0x00100000 + 0x11febc) { // StateMainMenu::KeyTitle: carrier registered check
-        fprintf(stderr, "[BYPASS] KeyTitle: carrier check bypassed! Advancing to Main Menu (State 4)\n");
-        r[3] = 1;
-        r[15] = 0x00100000 + 0x11fef8; // skip DSP socket connect, branch to SetState(4) block
-        return;
-    }
-    if (pc == 0x00100000 + 0x11d4b0) { // StateMainMenu::DrawMainMenu
-        static bool logged = false;
-        if (!logged) {
-            fprintf(stderr, "[MAIN_MENU] Entered StateMainMenu::DrawMainMenu!\n");
-            logged = true;
+            // Pop {r4, r5, r6, r7, r8, lr} and return to caller of endProcess
+            u32 sp = r[13];
+            r[4] = gm::r32(sp);
+            r[5] = gm::r32(sp + 4);
+            r[6] = gm::r32(sp + 8);
+            r[7] = gm::r32(sp + 12);
+            r[8] = gm::r32(sp + 16);
+            u32 lr = gm::r32(sp + 20);
+            r[13] = sp + 24;
+            r[15] = lr;
+            return;
         }
-    }
-    if (pc == 0x00100000 + 0x11fbf0) { // StateMainMenu::KeyMainMenu
-        fprintf(stderr, "[KEY_MAIN_MENU] Key pressed: %d\n", (int)r[1]);
-    }
-    if (pc == 0x00100000 + 0x11cf40) { // StateMainMenu::DrawStart
-        static bool loggedStart = false;
-        if (!loggedStart) {
-            fprintf(stderr, "[START_MENU] Entered StateMainMenu::DrawStart (Character/Slot Select)!\n");
-            loggedStart = true;
+        case 0x00100000 + 0x11feac: { // StateMainMenu::KeyTitle: cmp r1, #1
+            r[1] = 1; // force substate check to pass
+            break;
         }
-    }
-    if (pc == 0x00100000 + 0x11f804) { // StateMainMenu::KeyStart
-        fprintf(stderr, "[KEY_START] Key pressed: %d\n", (int)r[1]);
-    }
-    if (pc == 0x00100000 + 0x4e03c) { // DSPSock::DSP_Connect -> no-op
-        fprintf(stderr, "[NETWORK] DSPSock::DSP_Connect blocked (lr=0x%08x)\n", r[14] - 0x00100000);
-        r[0] = 0;
-        r[15] = r[14];
-        return;
-    }
-    if (pc == 0x00100000 + 0x4d9f0) { // DSPSock::DSP_setType
-        r[15] = r[14];
-        return;
-    }
-    if (pc == 0x00100000 + 0xc3bbc) { // NETWORK::CreatePatchPopup -> no-op
-        fprintf(stderr, "[NETWORK] CreatePatchPopup blocked (lr=0x%08x)\n", r[14] - 0x00100000);
-        r[15] = r[14];
-        return;
-    }
-    if (pc == 0x00100000 + 0xc42a0) { // NETWORK::CreatePopup
-        fprintf(stderr, "[NETWORK] CreatePopup id=%d blocked (lr=0x%08x)\n", r[1], r[14] - 0x00100000);
-        r[15] = r[14];
-        return;
-    }
-    if (pc == 0x00100000 + 0xc6604) { // NETWORK::WriteData
-        fprintf(stderr, "[NETWORK] WriteData r0=0x%x r1=%d r2=%d lr=0x%08x\n", r[0], r[1], r[2], r[14] - 0x00100000);
-    }
-    if (pc == 0x00100000 + 0xc6428) { // NETWORK::netConnect
-        fprintf(stderr, "[NETWORK] netConnect r1=%d lr=0x%08x\n", r[1], r[14] - 0x00100000);
-    }
-    if (pc == 0x00100000 + 0x117d78) { // StateMainMenu::SetPopupState
-        u32 msgPtr = r[2];
-        std::string msg = (msgPtr >= 0x1000 && msgPtr < gm::MEM_SIZE) ? gm::cstr(msgPtr) : "(null)";
-        fprintf(stderr, "[POPUP] SetPopupState id=%d msg='%s' r3=%d r13[0]=%d r13[4]=%d lr=0x%08x\n",
-                (int)(s32)(int8_t)r[1], msg.c_str(), r[3], gm::r32(r[13]), gm::r32(r[13]+4), r[14] - 0x00100000);
-    }
-    if (pc == 0x00100000 + 0xcffb4) { // QuestMgr::LoadQuestData
-        fprintf(stderr, "[QUEST] LoadQuestData called: r0=%d r1=%d lr=0x%08x\n", (int)(int8_t)r[0], (int)(int8_t)r[1], r[14] - 0x00100000);
-    }
-    if (pc == 0x00100000 + 0xd0e44) { // Call to LoadQuestData in QuestStatusList
-        fprintf(stderr, "[QUEST] About to call LoadQuestData at d0e44: r0=0x%x r1=%d r2=%d\n", r[0], (int)(int8_t)r[1], (int)(int8_t)r[2]);
-    }
-    if (pc == 0x00100000 + 0x418dc) { // BFont::DrawText(int, int, int, int, char*, int)
-        u32 strPtr = gm::r32(r[13] + 4);
-        int maxLen = -1;
-        if (r[14] == 0x00100000 + 0xe96e8) {
-            // StateInGameMenu::DrawQuestMenu list title
-            maxLen = 13;
+        case 0x00100000 + 0x11febc: { // StateMainMenu::KeyTitle: carrier registered check
+            r[3] = 1;
+            r[15] = 0x00100000 + 0x11fef8; // skip DSP socket connect, branch to SetState(4) block
+            return;
         }
-        u32 newPtr = Trans::translatePtr(strPtr, maxLen);
-        if (newPtr != strPtr) {
-            gm::w32(r[13] + 4, newPtr);
+        case 0x00100000 + 0x4e03c: { // DSPSock::DSP_Connect -> no-op
+            r[0] = 0;
+            r[15] = r[14];
+            return;
         }
-    }
-    if (pc == 0x00100000 + 0x41878 || pc == 0x00100000 + 0x41818 || pc == 0x00100000 + 0x41d78) {
-        // BFont::DrawText overloads where strPtr is at [sp, 0]
-        u32 strPtr = gm::r32(r[13] + 0);
-        u32 newPtr = Trans::translatePtr(strPtr);
-        if (newPtr != strPtr) {
-            gm::w32(r[13] + 0, newPtr);
+        case 0x00100000 + 0x4d9f0:   // DSPSock::DSP_setType
+        case 0x00100000 + 0xc3bbc:   // NETWORK::CreatePatchPopup -> no-op
+        case 0x00100000 + 0xc42a0: { // NETWORK::CreatePopup
+            r[15] = r[14];
+            return;
         }
-    }
-    if (pc == 0x00100000 + 0x41940) { // BFont::DrawTextLine(int, int, int, int, int, char*, int, int)
-        u32 strPtr = gm::r32(r[13] + 8);
-        u32 newPtr = Trans::translatePtr(strPtr);
-        if (newPtr != strPtr) {
-            gm::w32(r[13] + 8, newPtr);
+        case 0x00100000 + 0x418dc: { // BFont::DrawText(int, int, int, int, char*, int)
+            u32 strPtr = gm::r32(r[13] + 4);
+            int maxLen = (r[14] == 0x00100000 + 0xe96e8) ? 13 : -1;
+            u32 newPtr = Trans::translatePtr(strPtr, maxLen);
+            if (newPtr != strPtr) gm::w32(r[13] + 4, newPtr);
+            break;
         }
+        case 0x00100000 + 0x41878:
+        case 0x00100000 + 0x41818:
+        case 0x00100000 + 0x41d78: {
+            u32 strPtr = gm::r32(r[13] + 0);
+            u32 newPtr = Trans::translatePtr(strPtr);
+            if (newPtr != strPtr) gm::w32(r[13] + 0, newPtr);
+            break;
+        }
+        case 0x00100000 + 0x41940: { // BFont::DrawTextLine
+            u32 strPtr = gm::r32(r[13] + 8);
+            u32 newPtr = Trans::translatePtr(strPtr);
+            if (newPtr != strPtr) gm::w32(r[13] + 8, newPtr);
+            break;
+        }
+        default:
+            break;
     }
     icount++;
     u32 cc = ins >> 28;

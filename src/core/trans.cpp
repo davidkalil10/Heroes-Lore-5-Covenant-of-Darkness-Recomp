@@ -26,7 +26,13 @@ void init(const std::string& customPath) {
     s_inited = true;
 
     std::vector<std::string> candidates;
-    if (!customPath.empty()) candidates.push_back(customPath);
+    if (!customPath.empty()) {
+        candidates.push_back(customPath);
+        auto slash = customPath.rfind('/');
+        if (slash != std::string::npos) {
+            candidates.push_back(customPath.substr(0, slash) + "/../dict.bin");
+        }
+    }
     candidates.push_back("data/dict.bin");
     candidates.push_back("dist/dict.bin");
     candidates.push_back("../data/dict.bin");
