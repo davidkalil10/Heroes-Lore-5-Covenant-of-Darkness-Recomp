@@ -24,7 +24,8 @@ Read `docs/RUNTIME.md` for diagnostics and limitations, and run
 The integrated PC build passes 14 full ARM state comparisons, VFS oracle checks,
 11 identical rendered images, and nonzero output from the SDL audio mixer.
 The hot-block generator reproduces the checked-in include without changing other
-sources. Windows/Linux Actions run the same runtime validation before packaging.
+sources. Windows/Linux Actions run the same runtime validation before packaging. The
+Windows MSYS2 environment explicitly installs UCRT64 Python for this check.
 
 The prior isolated PC benchmark measured a 3.13x mean improvement. The user has
 confirmed PC gameplay and sound. APK/NRO compilation and installation are the next
