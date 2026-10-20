@@ -1,0 +1,842 @@
+[
+  {
+    "id": 0,
+    "text": "Data Management"
+  },
+  {
+    "id": 1,
+    "text": "Save Game"
+  },
+  {
+    "id": 2,
+    "text": "The data saving function is;Number change/device change/unavoidable;When re-downloading the game after deleting it;Game data saved to date;This function is for protection.;Do you want to proceed?"
+  },
+  {
+    "id": 3,
+    "text": "currently stored;Character information/Game progress/Items/;Other saved data to server;Sending."
+  },
+  {
+    "id": 4,
+    "text": "If you proceed with the transfer,;All information is stored on the server;The game will be reset.;Would you like to proceed with the transfer?"
+  },
+  {
+    "id": 5,
+    "text": "Your character information/game progress/items/other saved data;Saving to server."
+  },
+  {
+    "id": 6,
+    "text": "Your character information/game progress/items/other saved data;Saved safely."
+  },
+  {
+    "id": 7,
+    "text": "If you download a new game;Saved character information/game progress/;Items/other saved data;Download and keep current settings;You can keep it.;Click OK to start the game;Quit."
+  },
+  {
+    "id": 8,
+    "text": "Your character information/game progress/items/other save data is being saved from the server."
+  },
+  {
+    "id": 9,
+    "text": "Previously saved character information/game progress/items/other save data exists on the server. Would you like to load the data?"
+  },
+  {
+    "id": 10,
+    "text": "You will need to restart the game to complete game setup. Click OK to end the game."
+  },
+  {
+    "id": 11,
+    "text": "There is no save data stored on the server. Please save your save data on the server before using it."
+  },
+  {
+    "id": 12,
+    "text": "Connection to the server is not smooth. Please try again later."
+  },
+  {
+    "id": 13,
+    "text": "Your character information/game progress/items/other saved data;Is it stored on the server?;Confirming."
+  },
+  {
+    "id": 14,
+    "text": "There is no save history."
+  },
+  {
+    "id": 15,
+    "text": "An attack by an ancient species that began in the Holy Land..."
+  },
+  {
+    "id": 16,
+    "text": "The war between humans and Neved had to stop;Peace has been restored to the Orbis Islands -"
+  },
+  {
+    "id": 17,
+    "text": "To end this pointless war;Was it a disaster from God?"
+  },
+  {
+    "id": 18,
+    "text": "To put it bluntly..."
+  },
+  {
+    "id": 19,
+    "text": "There is no such god in this world."
+  },
+  {
+    "id": 20,
+    "text": "Equipment used: Two-handed weapon and light/medium armor;Default Bar:HP/SP;The warrior dominates the battlefield by swinging a great sword larger than his height like a storm. Warriors, who can use large-scale skills by collecting SP through attacks, are better suited to attacking multiple enemies than any other class."
+  },
+  {
+    "id": 21,
+    "text": "Equipment used: One-handed sword and light armor;Basic Bar:HP/SP/Critical Sphere;Rogue's lightning-fast movements are often mistaken for teleportation. A skilled rogue can exploit the opponent's gap in the blink of an eye and deliver a finishing technique with a critical orb collected after a heavy hit, inflicting fatal wounds."
+  },
+  {
+    "id": 22,
+    "text": "Equipment used: guns and light armor;Default Bar:HP/SP;Gunslingers are experts in various firearms and explosives. Gunslingers use overwhelming firepower and range to fight without even allowing the enemy to get close. There are no blind spots for the gunslinger, who can attack from all directions with a variety of weapons."
+  },
+  {
+    "id": 23,
+    "text": "Equipment used: Spear and light/medium armor;Basic Bar:HP/SP/Critical Sphere;The knight's defense power, which treats his shield like a part of his body, is at the highest level. In addition, the turning blow that consumes the critical spheres collected while blocking attacks shows that he also has the strongest spear."
+  },
+  {
+    "id": 24,
+    "text": "Melee/range attack class;You can deal with multiple enemies with a wide attack range and skills."
+  },
+  {
+    "id": 25,
+    "text": "Melee/multiple hitting class;Quick attack and evasion skills allow you to quickly defeat enemies."
+  },
+  {
+    "id": 26,
+    "text": "Long-distance/multiple hitting class;Long-range attacks allow you to fight without enemies getting close."
+  },
+  {
+    "id": 27,
+    "text": "Melee/defensive class;High survivability due to high defense and defense skills."
+  },
+  {
+    "id": 28,
+    "text": "Marketplace (Sell)"
+  },
+  {
+    "id": 29,
+    "text": "Marketplace (Buy)"
+  },
+  {
+    "id": 30,
+    "text": "Storage"
+  },
+  {
+    "id": 31,
+    "text": "Mailbox"
+  },
+  {
+    "id": 32,
+    "text": "Change Slot"
+  },
+  {
+    "id": 33,
+    "text": "Shop"
+  },
+  {
+    "id": 34,
+    "text": "Selling"
+  },
+  {
+    "id": 35,
+    "text": "Sold"
+  },
+  {
+    "id": 36,
+    "text": "Expired"
+  },
+  {
+    "id": 37,
+    "text": "Register"
+  },
+  {
+    "id": 38,
+    "text": "Collect Gold"
+  },
+  {
+    "id": 39,
+    "text": "Cancel Listing"
+  },
+  {
+    "id": 40,
+    "text": "Storage"
+  },
+  {
+    "id": 41,
+    "text": "Inventory"
+  },
+  {
+    "id": 42,
+    "text": "Select the item you want to register."
+  },
+  {
+    "id": 43,
+    "text": "work"
+  },
+  {
+    "id": 44,
+    "text": "Complete"
+  },
+  {
+    "id": 45,
+    "text": "Expired"
+  },
+  {
+    "id": 46,
+    "text": "Infinite"
+  },
+  {
+    "id": 47,
+    "text": "None"
+  },
+  {
+    "id": 48,
+    "text": "On the exchange sales list;Would you like to register?"
+  },
+  {
+    "id": 49,
+    "text": "goods;Do you want to retrieve it?"
+  },
+  {
+    "id": 50,
+    "text": "transaction amount;Do you want to retrieve it?"
+  },
+  {
+    "id": 51,
+    "text": "Search Name"
+  },
+  {
+    "id": 52,
+    "text": "Filter Search"
+  },
+  {
+    "id": 53,
+    "text": "Enter item name"
+  },
+  {
+    "id": 54,
+    "text": "Search"
+  },
+  {
+    "id": 55,
+    "text": "Type (large)"
+  },
+  {
+    "id": 56,
+    "text": "Type (small)"
+  },
+  {
+    "id": 57,
+    "text": "grade"
+  },
+  {
+    "id": 58,
+    "text": "Restriction level"
+  },
+  {
+    "id": 59,
+    "text": "options"
+  },
+  {
+    "id": 60,
+    "text": "Amount limit"
+  },
+  {
+    "id": 61,
+    "text": "Amount lower limit"
+  },
+  {
+    "id": 62,
+    "text": "sort"
+  },
+  {
+    "id": 63,
+    "text": "Search results"
+  },
+  {
+    "id": 64,
+    "text": "Enter"
+  },
+  {
+    "id": 65,
+    "text": "Search"
+  },
+  {
+    "id": 66,
+    "text": "All"
+  },
+  {
+    "id": 67,
+    "text": "Weapons"
+  },
+  {
+    "id": 68,
+    "text": "Armor"
+  },
+  {
+    "id": 69,
+    "text": "Recipes"
+  },
+  {
+    "id": 70,
+    "text": "Skill Books"
+  },
+  {
+    "id": 71,
+    "text": "Other"
+  },
+  {
+    "id": 72,
+    "text": "Two-Handed / Axe"
+  },
+  {
+    "id": 73,
+    "text": "One-Handed / Dagger"
+  },
+  {
+    "id": 74,
+    "text": "Guns"
+  },
+  {
+    "id": 75,
+    "text": "Spears"
+  },
+  {
+    "id": 76,
+    "text": "Helmets"
+  },
+  {
+    "id": 77,
+    "text": "Body Armor"
+  },
+  {
+    "id": 78,
+    "text": "Gloves"
+  },
+  {
+    "id": 79,
+    "text": "Boots"
+  },
+  {
+    "id": 80,
+    "text": "Shields"
+  },
+  {
+    "id": 81,
+    "text": "Accessories"
+  },
+  {
+    "id": 82,
+    "text": "Consumables"
+  },
+  {
+    "id": 83,
+    "text": "Orbs"
+  },
+  {
+    "id": 84,
+    "text": "Materials"
+  },
+  {
+    "id": 85,
+    "text": "Warrior / Rogue"
+  },
+  {
+    "id": 86,
+    "text": "Gunslinger / Knight"
+  },
+  {
+    "id": 87,
+    "text": "Normal"
+  },
+  {
+    "id": 88,
+    "text": "Rare"
+  },
+  {
+    "id": 89,
+    "text": "Epic"
+  },
+  {
+    "id": 90,
+    "text": "Heroic"
+  },
+  {
+    "id": 91,
+    "text": "Legendary"
+  },
+  {
+    "id": 92,
+    "text": "Set"
+  },
+  {
+    "id": 93,
+    "text": "Ability related"
+  },
+  {
+    "id": 94,
+    "text": "HP-related"
+  },
+  {
+    "id": 95,
+    "text": "SP related"
+  },
+  {
+    "id": 96,
+    "text": "Attack power related"
+  },
+  {
+    "id": 97,
+    "text": "Defense related"
+  },
+  {
+    "id": 98,
+    "text": "Hit rate related"
+  },
+  {
+    "id": 99,
+    "text": "avoidance"
+  },
+  {
+    "id": 100,
+    "text": "Knockdown resistance"
+  },
+  {
+    "id": 101,
+    "text": "shield defense"
+  },
+  {
+    "id": 102,
+    "text": "Critical"
+  },
+  {
+    "id": 103,
+    "text": "Cree resistance"
+  },
+  {
+    "id": 104,
+    "text": "Magic Resistance"
+  },
+  {
+    "id": 105,
+    "text": "Magic hit"
+  },
+  {
+    "id": 106,
+    "text": "SP consumption"
+  },
+  {
+    "id": 107,
+    "text": "Critical damage"
+  },
+  {
+    "id": 108,
+    "text": "Cool time"
+  },
+  {
+    "id": 109,
+    "text": "Potion Bonus"
+  },
+  {
+    "id": 110,
+    "text": "attack speed"
+  },
+  {
+    "id": 111,
+    "text": "Other options"
+  },
+  {
+    "id": 112,
+    "text": "Category"
+  },
+  {
+    "id": 113,
+    "text": "name"
+  },
+  {
+    "id": 114,
+    "text": "Level (descending)"
+  },
+  {
+    "id": 115,
+    "text": "Level (ascending)"
+  },
+  {
+    "id": 116,
+    "text": "Price (descending)"
+  },
+  {
+    "id": 117,
+    "text": "Price (in ascending order)"
+  },
+  {
+    "id": 118,
+    "text": "1~10"
+  },
+  {
+    "id": 119,
+    "text": "11~20"
+  },
+  {
+    "id": 120,
+    "text": "21~30"
+  },
+  {
+    "id": 121,
+    "text": "31~40"
+  },
+  {
+    "id": 122,
+    "text": "41~50"
+  },
+  {
+    "id": 123,
+    "text": "51~60"
+  },
+  {
+    "id": 124,
+    "text": "61~70"
+  },
+  {
+    "id": 125,
+    "text": "71~80"
+  },
+  {
+    "id": 126,
+    "text": "81~90"
+  },
+  {
+    "id": 127,
+    "text": "91~99"
+  },
+  {
+    "id": 128,
+    "text": "*reset"
+  },
+  {
+    "id": 129,
+    "text": "currency for trading"
+  },
+  {
+    "id": 130,
+    "text": "Send a letter"
+  },
+  {
+    "id": 131,
+    "text": "regular mailbox"
+  },
+  {
+    "id": 132,
+    "text": "transaction mailbox"
+  },
+  {
+    "id": 133,
+    "text": "address book"
+  },
+  {
+    "id": 134,
+    "text": "*Add address book"
+  },
+  {
+    "id": 135,
+    "text": "Enter phone number"
+  },
+  {
+    "id": 136,
+    "text": "Enter nickname"
+  },
+  {
+    "id": 137,
+    "text": "Delete"
+  },
+  {
+    "id": 138,
+    "text": "Recipient"
+  },
+  {
+    "id": 139,
+    "text": "item"
+  },
+  {
+    "id": 140,
+    "text": "sending money"
+  },
+  {
+    "id": 141,
+    "text": "Charge amount"
+  },
+  {
+    "id": 142,
+    "text": "message"
+  },
+  {
+    "id": 143,
+    "text": "Send"
+  },
+  {
+    "id": 144,
+    "text": "Discard"
+  },
+  {
+    "id": 145,
+    "text": "Take Out"
+  },
+  {
+    "id": 146,
+    "text": "Store"
+  },
+  {
+    "id": 147,
+    "text": "Enter the recipient and message"
+  },
+  {
+    "id": 148,
+    "text": "Would you like to send a letter?"
+  },
+  {
+    "id": 149,
+    "text": "item in the letter;Would you like to attach it?"
+  },
+  {
+    "id": 150,
+    "text": "dog"
+  },
+  {
+    "id": 151,
+    "text": "Inbox"
+  },
+  {
+    "id": 152,
+    "text": "Sent letter"
+  },
+  {
+    "id": 153,
+    "text": "Reply"
+  },
+  {
+    "id": 154,
+    "text": "Would you like to unload with a single bag?"
+  },
+  {
+    "id": 155,
+    "text": "Would you like to upload it to the warehouse?"
+  },
+  {
+    "id": 156,
+    "text": "Please enter the amount."
+  },
+  {
+    "id": 157,
+    "text": "Currency exchange for transactions"
+  },
+  {
+    "id": 158,
+    "text": "Select the amount you wish to convert into your trading currency.;^The converted amount cannot be returned."
+  },
+  {
+    "id": 159,
+    "text": "nickname"
+  },
+  {
+    "id": 160,
+    "text": "Attached amount"
+  },
+  {
+    "id": 161,
+    "text": "The other party did not accept and return it."
+  },
+  {
+    "id": 162,
+    "text": "From"
+  },
+  {
+    "id": 163,
+    "text": "Accept"
+  },
+  {
+    "id": 164,
+    "text": "Return"
+  },
+  {
+    "id": 165,
+    "text": "Would you like to receive the attached item?;^(If there is a charge, you must pay it.)"
+  },
+  {
+    "id": 166,
+    "text": "Would you like to return the message you received?"
+  },
+  {
+    "id": 167,
+    "text": "This item is not available."
+  },
+  {
+    "id": 168,
+    "text": "Sell items"
+  },
+  {
+    "id": 169,
+    "text": "Enter the amount for the item you want to sell."
+  },
+  {
+    "id": 170,
+    "text": "This item is being traded."
+  },
+  {
+    "id": 171,
+    "text": "million"
+  },
+  {
+    "id": 172,
+    "text": "one hundred thousand"
+  },
+  {
+    "id": 173,
+    "text": "only"
+  },
+  {
+    "id": 174,
+    "text": "cloth"
+  },
+  {
+    "id": 175,
+    "text": "back"
+  },
+  {
+    "id": 176,
+    "text": "ten"
+  },
+  {
+    "id": 177,
+    "text": "work"
+  },
+  {
+    "id": 178,
+    "text": "amount"
+  },
+  {
+    "id": 179,
+    "text": "Would you like to receive SMS?;Useful information such as events is provided."
+  },
+  {
+    "id": 180,
+    "text": "Your consent has been completed."
+  },
+  {
+    "id": 181,
+    "text": "Your consent has been denied."
+  },
+  {
+    "id": 182,
+    "text": "Content set on the standby screen;You have to turn it off in screen settings.;Normal content use;It is possible"
+  },
+  {
+    "id": 183,
+    "text": "&-Instructions for use-;;|This game incurs separate costs when using the game.;It is a standalone game that does not play.;step. A call fee is charged upon initial SMS reception verification.;Call charges and additional charges apply when purchasing paid items.;Information usage fees may apply."
+  },
+  {
+    "id": 184,
+    "text": "^-Information-;;;02-559-8787"
+  },
+  {
+    "id": 185,
+    "text": ";|If a problem occurs, please contact the contact information below.;A quick solution is possible.;;S/W version must be kept up to date for smooth operation.;You can proceed with the game."
+  },
+  {
+    "id": 186,
+    "text": "^Consent to use customer information;|1. Recipient:;Electronic Arts Korea Ltd. 02-559-8787;2. Purpose of providing personal information: Advertising;3. Items of personal information provided:;Cell phone model. phone number;4. Retention of personal information. Period of use:;Discard after 1 year of storage"
+  },
+  {
+    "id": 187,
+    "text": "I agree that LGU+ will use the personal information listed above.;I have been notified of the provision as above.;I fully understand and agree to this."
+  },
+  {
+    "id": 188,
+    "text": "Press Any Key"
+  },
+  {
+    "id": 189,
+    "text": "Normal"
+  },
+  {
+    "id": 190,
+    "text": "Hard"
+  },
+  {
+    "id": 191,
+    "text": "Hell"
+  },
+  {
+    "id": 192,
+    "text": ";To ensure stable execution, the game closes upon initial launch.;="
+  },
+  {
+    "id": 193,
+    "text": "Would you like to connect?"
+  },
+  {
+    "id": 194,
+    "text": "Support"
+  },
+  {
+    "id": 195,
+    "text": "Game Name: Heroes 5 - Jet Black Contract;Version:;Company name: Electronic Arts Korea Co., Ltd.;Phone number: 02-559-8787;;Homepage:;www.eamobile.co.kr;Email:;support@eamobile.co.kr"
+  },
+  {
+    "id": 196,
+    "text": "Touch Anywhere"
+  },
+  {
+    "id": 197,
+    "text": "Would you like to make a call?;02-559-8787 (call fee not included)"
+  },
+  {
+    "id": 198,
+    "text": "&(OK: Make a call)"
+  },
+  {
+    "id": 199,
+    "text": "The letter I sent;Would you like to confirm?"
+  },
+  {
+    "id": 200,
+    "text": "A call fee will be charged when using Kkjon Gagi.;Would you like to connect?"
+  },
+  {
+    "id": 201,
+    "text": "Call fees apply when using gifting.;Would you like to connect?"
+  },
+  {
+    "id": 202,
+    "text": "Call fees apply for this service."
+  },
+  {
+    "id": 203,
+    "text": "You can use it at a cheaper price by signing up for a data plan (Oz Infinite Freedom, etc.).;Call fees apply when connecting to the server. Do you want to continue?"
+  },
+  {
+    "id": 204,
+    "text": "&(Touch: Make a call)"
+  },
+  {
+    "id": 205,
+    "text": "recovery upload"
+  },
+  {
+    "id": 206,
+    "text": "recovery download"
+  },
+  {
+    "id": 207,
+    "text": "Check if there is save data stored on the server.;Do you want to proceed?"
+  },
+  {
+    "id": 208,
+    "text": "Level sorting is for equipment items only.;it's possible."
+  },
+  {
+    "id": 209,
+    "text": "Official version registration"
+  }
+]

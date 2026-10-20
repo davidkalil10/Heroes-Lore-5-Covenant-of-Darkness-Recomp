@@ -1,0 +1,422 @@
+[
+  {
+    "id": 0,
+    "text": "basic title"
+  },
+  {
+    "id": 1,
+    "text": "Can be achieved by killing 30 ostriches."
+  },
+  {
+    "id": 2,
+    "text": "Can be achieved by killing 10 ancient species on the passenger ship."
+  },
+  {
+    "id": 3,
+    "text": "This can be achieved by killing 100 of each of the 3 types of Meadow Hill Wolf/Mad Wolf/Berserk Wolf."
+  },
+  {
+    "id": 4,
+    "text": "This can be achieved by killing 100 of 5 types of Northern Cave Bats, Mine Bats, Evolutionary Bats, Evil Spirit Bats, and Blinking Bats."
+  },
+  {
+    "id": 5,
+    "text": "This can be achieved by killing 100 each of 3 types of goblins/violent goblins/clever goblins."
+  },
+  {
+    "id": 6,
+    "text": "Can be achieved by defeating the mysterious monster in the underpass."
+  },
+  {
+    "id": 7,
+    "text": "Can be achieved by defeating all bridge guards and large security robots."
+  },
+  {
+    "id": 8,
+    "text": "This can be achieved when you take no damage during the battle with Chris."
+  },
+  {
+    "id": 9,
+    "text": "This can be achieved when you take no damage during the battle with Evelyn."
+  },
+  {
+    "id": 10,
+    "text": "Can be achieved by completing the battle with Eileen within 45 seconds."
+  },
+  {
+    "id": 11,
+    "text": "Achievable by completing the battle with the Remnants of Nightmare within 60 seconds."
+  },
+  {
+    "id": 12,
+    "text": "Achievable by completing the first battle with Alex within 60 seconds."
+  },
+  {
+    "id": 13,
+    "text": "Can be achieved by completing the battle with Incomplete Advent within 45 seconds."
+  },
+  {
+    "id": 14,
+    "text": "Can be obtained by defeating the Hidden Boss Red Eyes."
+  },
+  {
+    "id": 15,
+    "text": "It can be obtained by defeating the Hidden Boss Enhancement starter type."
+  },
+  {
+    "id": 16,
+    "text": "It can be obtained by defeating the hidden boss King of the Dead."
+  },
+  {
+    "id": 17,
+    "text": "It can be obtained by defeating the Hidden Boss, Master of Drama."
+  },
+  {
+    "id": 18,
+    "text": "Can be obtained by defeating the hidden boss Nightmare Watcher."
+  },
+  {
+    "id": 19,
+    "text": "It can be obtained by defeating the hidden boss Crazy Machine."
+  },
+  {
+    "id": 20,
+    "text": "You can obtain it by winning the battle against Hidden Boss Rurain."
+  },
+  {
+    "id": 21,
+    "text": "This can be achieved by obtaining the Thorn Tree set item."
+  },
+  {
+    "id": 22,
+    "text": "This can be achieved by obtaining the Drake set item."
+  },
+  {
+    "id": 23,
+    "text": "Can be achieved by acquiring the Nightmare set item."
+  },
+  {
+    "id": 24,
+    "text": "Can be achieved by obtaining the Phoenix set item."
+  },
+  {
+    "id": 25,
+    "text": "Can be achieved when obtaining the Angel Wing set item."
+  },
+  {
+    "id": 26,
+    "text": "Can be achieved by obtaining the Dragonborn set item."
+  },
+  {
+    "id": 27,
+    "text": "You can achieve this by obtaining the Wyatt set item."
+  },
+  {
+    "id": 28,
+    "text": "This can be achieved by acquiring the Locke set item."
+  },
+  {
+    "id": 29,
+    "text": "Can be achieved by obtaining Warhead set items."
+  },
+  {
+    "id": 30,
+    "text": "Can be achieved by obtaining the Dragon Set item."
+  },
+  {
+    "id": 31,
+    "text": "Can be achieved by obtaining the Aceyaki set item."
+  },
+  {
+    "id": 32,
+    "text": "This can be achieved by acquiring the Blue Drake set item."
+  },
+  {
+    "id": 33,
+    "text": "Can be achieved by acquiring the Tyrant Jackal set item."
+  },
+  {
+    "id": 34,
+    "text": "Can be achieved by obtaining the Siegmund set item."
+  },
+  {
+    "id": 35,
+    "text": "Can be achieved by obtaining the highest level legendary two-handed swords: Hugin/Lilith/Gimir/Skol/Isir."
+  },
+  {
+    "id": 36,
+    "text": "This can be achieved by acquiring the highest level legendary two-handed axes: Munin/Gram/Shopen/Odd/Alcane."
+  },
+  {
+    "id": 37,
+    "text": "It can be achieved by obtaining the highest level legendary daggers Baldr/Esgar/Alsvid/Bor/Freki."
+  },
+  {
+    "id": 38,
+    "text": "Can be achieved by acquiring the highest level legendary one-handed swords: Gary/Einherjar/Aegir/Grande/Fenrir."
+  },
+  {
+    "id": 39,
+    "text": "Can be achieved by acquiring the highest level legendary guns: Gjallarhorn/Dielun/Fatal/Breed/Vide."
+  },
+  {
+    "id": 40,
+    "text": "Can be achieved by obtaining the highest level legendary spears: Raven/Ferdin/Blinka/Alas/Ether."
+  },
+  {
+    "id": 41,
+    "text": "It can be achieved when the total number of achievement points exceeds 10."
+  },
+  {
+    "id": 42,
+    "text": "It can be achieved when the total number of achievement points exceeds 50 points."
+  },
+  {
+    "id": 43,
+    "text": "It can be achieved when the total number of achievement points exceeds 100."
+  },
+  {
+    "id": 44,
+    "text": "It can be achieved when the total number of achievement points exceeds 200 points."
+  },
+  {
+    "id": 45,
+    "text": "It can be achieved when all achievements have been completed."
+  },
+  {
+    "id": 46,
+    "text": "You can achieve this by completing the Weapon Encyclopedia."
+  },
+  {
+    "id": 47,
+    "text": "This can be achieved by completing the Armor Encyclopedia."
+  },
+  {
+    "id": 48,
+    "text": "You can achieve this by completing the Accessory Encyclopedia."
+  },
+  {
+    "id": 49,
+    "text": "Can be achieved when acquiring the spirit items Silver Chariot/Pale Justice/Nightmare/Wheel of Fortune/The World."
+  },
+  {
+    "id": 50,
+    "text": "This can be achieved by acquiring the spirit items Cat's Eye Hairpin/Moonstone Circlet/Ruby Hairpin/Topaz Circlet/Opal Hairpin."
+  },
+  {
+    "id": 51,
+    "text": "Can be achieved when all spirit skills have been acquired."
+  },
+  {
+    "id": 52,
+    "text": "Can be achieved by completing all newspaper sub-quests."
+  },
+  {
+    "id": 53,
+    "text": "Can be achieved upon completing the hidden quest ‘Nightmare’."
+  },
+  {
+    "id": 54,
+    "text": "Can be achieved upon completing the hidden quest ‘Blind Faith’."
+  },
+  {
+    "id": 55,
+    "text": "Can be achieved upon completing the hidden quest ‘Vigilance System’."
+  },
+  {
+    "id": 56,
+    "text": "Can be achieved upon completing the hidden quest ‘Abyss of Ruins’."
+  },
+  {
+    "id": 57,
+    "text": "Can be achieved by completing 10 quests."
+  },
+  {
+    "id": 58,
+    "text": "Can be achieved by completing 50 quests."
+  },
+  {
+    "id": 59,
+    "text": "Can be achieved by completing 100 quests."
+  },
+  {
+    "id": 60,
+    "text": "Can be achieved by completing 200 quests."
+  },
+  {
+    "id": 61,
+    "text": "Can be achieved by completing 300 quests."
+  },
+  {
+    "id": 62,
+    "text": "It can be achieved when you earn 10000 gold."
+  },
+  {
+    "id": 63,
+    "text": "It can be achieved when you earn 100000 gold."
+  },
+  {
+    "id": 64,
+    "text": "It can be achieved when you earn 1000000 gold."
+  },
+  {
+    "id": 65,
+    "text": "Can be achieved when a character dies 30 times."
+  },
+  {
+    "id": 66,
+    "text": "Can be achieved when a character dies 100 times."
+  },
+  {
+    "id": 67,
+    "text": "Can be achieved when a character dies 200 times."
+  },
+  {
+    "id": 68,
+    "text": "Total play time reached 7 hours, 7 minutes and 7 seconds!"
+  },
+  {
+    "id": 69,
+    "text": "Total play time reached 15 hours!"
+  },
+  {
+    "id": 70,
+    "text": "Total play time reached 30 hours!"
+  },
+  {
+    "id": 71,
+    "text": "Kill 300 monsters"
+  },
+  {
+    "id": 72,
+    "text": "Kill 1000 monsters"
+  },
+  {
+    "id": 73,
+    "text": "Kill 5000 monsters"
+  },
+  {
+    "id": 74,
+    "text": "Kill 10000 monsters"
+  },
+  {
+    "id": 75,
+    "text": "Defeat 100 named monsters"
+  },
+  {
+    "id": 76,
+    "text": "Defeat 300 named monsters"
+  },
+  {
+    "id": 77,
+    "text": "Defeat 500 named monsters"
+  },
+  {
+    "id": 78,
+    "text": "Defeat 1000 named monsters"
+  },
+  {
+    "id": 79,
+    "text": "Use 999 potions"
+  },
+  {
+    "id": 80,
+    "text": "Use 999 Hi-Quick Potions"
+  },
+  {
+    "id": 81,
+    "text": "Can be achieved by successfully refining 50 times."
+  },
+  {
+    "id": 82,
+    "text": "Can be achieved by successfully refining 100 times."
+  },
+  {
+    "id": 83,
+    "text": "Can be achieved by successfully refining 200 times."
+  },
+  {
+    "id": 84,
+    "text": "Can be achieved by successfully refining 500 times."
+  },
+  {
+    "id": 85,
+    "text": "Can be achieved by successfully refining 1000 times."
+  },
+  {
+    "id": 86,
+    "text": "Can be achieved by obtaining 1 ending."
+  },
+  {
+    "id": 87,
+    "text": "Can be achieved by obtaining 2 endings."
+  },
+  {
+    "id": 88,
+    "text": "This can be achieved when you have seen all endings."
+  },
+  {
+    "id": 89,
+    "text": "Reach level 99"
+  },
+  {
+    "id": 90,
+    "text": "Can be achieved when combining the Twilight Soup Powder items."
+  },
+  {
+    "id": 91,
+    "text": "This can be achieved by combining 100 potions/middle potions/high potions/quick potions/high quick potions each."
+  },
+  {
+    "id": 92,
+    "text": "Can be achieved by successfully applying the Orb of the Thunderer 30 times."
+  },
+  {
+    "id": 93,
+    "text": "Can be achieved by successfully bestowing Diamond Orb 30 times."
+  },
+  {
+    "id": 94,
+    "text": "Can be achieved by successfully applying Spirit Orb 30 times."
+  },
+  {
+    "id": 95,
+    "text": "Can be achieved by successfully applying the Reaper's Orb 30 times."
+  },
+  {
+    "id": 96,
+    "text": "Can be achieved by successfully granting the Emperor's Orb 30 times."
+  },
+  {
+    "id": 97,
+    "text": "Can be achieved by successfully applying Orb of Binding 30 times."
+  },
+  {
+    "id": 98,
+    "text": "Can be achieved by successfully applying Orb of Resolve 30 times."
+  },
+  {
+    "id": 99,
+    "text": "Can be achieved by successfully applying the Orb of Fighting God 30 times."
+  },
+  {
+    "id": 100,
+    "text": "Can be achieved by successfully applying Orb of Resonance 30 times."
+  },
+  {
+    "id": 101,
+    "text": "Can be achieved by successfully applying Vampiric Orb 30 times."
+  },
+  {
+    "id": 102,
+    "text": "Can be achieved by successfully applying Sage's Orb 30 times."
+  },
+  {
+    "id": 103,
+    "text": "Can be achieved by successfully applying Magic Orb 30 times."
+  },
+  {
+    "id": 104,
+    "text": "Can be achieved by successfully applying Storm Orb 30 times."
+  }
+]

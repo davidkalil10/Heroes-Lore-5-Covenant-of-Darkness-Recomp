@@ -1,0 +1,86 @@
+[
+  {
+    "title": "Basic Controls",
+    "body": "Move: Touch the left side of the screen and drag;Dash: Touch the left side of the screen and quickly drag / DASH on the right side;Research/Conversation: Square key on the right side of the screen;Shortcut key: Icon on the right side of the screen;Connector: Icon on the right side of the screen (yellow box);Shortening belt replacement: # icon on the right side of the screen;Menu: Arrow on the right side of the screen;Cash Shop: Top SHOP;Map: Top MAP;Quick Save: Top SAVE"
+  },
+  {
+    "title": "User Interface",
+    "body": "top left;Red gauge: Stamina (HP);Blue gauge: Stamina (SP);Green Gauge: Spirit Gauge;;left;critical sphere;(Rogue/Knight only);;Bottom: shortened belt;Yellow gauge: Experience"
+  },
+  {
+    "title": "Class: Warrior",
+    "body": "Weapon: Two-handed sword;Armor: Light/Medium Armor;HP: Recovered at regular intervals;SP Recovery: Recovery when attacking;SP maximum: Increased by item options or characteristics;Attack Type: Physical Attack"
+  },
+  {
+    "title": "Class: Rogue",
+    "body": "Weapon: One-handed sword;Armor: Light Armor;HP: Recovered at regular intervals;SP Recovery: Recovers at regular intervals;SP maximum: Increased by item options or characteristics;Critical Gu: Skills that can acquire Critical Gu (detailed skill description);Attack type: physical attack"
+  },
+  {
+    "title": "Class: Gunslinger",
+    "body": "Weapon: Gun;Armor: Light Armor;HP: Recovered at regular intervals;SP Recovery: Recovers at regular intervals;SP Max: Increased by mental stat/item options or perks;Attack Type: Long-range attack"
+  },
+  {
+    "title": "Class: Knight",
+    "body": "Weapon: Spear;Armor: Light/Medium Armor/Shield;HP: Recovered at regular intervals;SP Recovery: Recovers at regular intervals;SP Max: Increased by mental stat/item options or perks;Critical Orb: Obtained when blocking an enemy attack with an active block.;Attack type: physical attack"
+  },
+  {
+    "title": "Stats & Attributes",
+    "body": "Strength: Melee attack and melee attack power;Dexterity: Long range attack and hit/dodge;Health: Max HP/HP recovery speed/physical defense/magic defense;Spirit: Magic hit/Magic resistance/Magic attack/SP maximum amount and recovery speed (Knight/Gunslinger);"
+  },
+  {
+    "title": "Skills",
+    "body": "You can purchase a skill book from a skill master to learn new skills or level up existing skills. In order to learn a skill, the character's level must be above the skill's limit level."
+  },
+  {
+    "title": "Combos",
+    "body": "You can use skills and active characteristics by registering them in the linker. The combo can be used by touching the icon (yellow box) on the right side of the screen, and when you press the button repeatedly, skills are used in the order registered in the combo.;Some characteristics or skills cannot be registered in the combo.;(Refer to detailed skill description)"
+  },
+  {
+    "title": "Traits & Talents",
+    "body": "Attributes can enhance the abilities or skills of a class.;Each class has three attribute classes.;;Characteristic points:;You get 1 attribute point per 2 levels, and you can increase the attribute level by investing attribute points.;;Active and Passive:;Attributes are divided into passive, where the effect is applied automatically, and active, where the effect is registered with a shortcut key.;;Prerequisites:;You must meet the series investment score displayed on the left of the attribute menu to increase the relevant attribute.;Characteristics connected by lines represent prerequisites, and lower-level characteristics can be raised only when the connected characteristics are raised."
+  },
+  {
+    "title": "Equipment",
+    "body": "You can wear the equipment if you meet the equipment type/restriction level displayed in the equipment description.;Common Item: White;Rare Item: Yellow;Epic Item: Blue;Hero Item: Purple;Legendary Item: Red;Set Item: Green;You can enhance the performance of items through smelting/orb combination.;You can change the options of an item through synthesis."
+  },
+  {
+    "title": "Spirits: Overview",
+    "body": "Equipment: Helmet/Armor (Wearing Restriction: Spirit);Skill Acquisition: Can be acquired through events during the game.;;Level up: You automatically gain experience points through battle and level up when you reach a certain amount.;;Abilities: Automatically increases as you level up and can be changed with equipment options.;;Spirit Gauge: Can be recovered through battle.;;Tip: The spirit's attack power is affected by the character's magic attacks in addition to the spirit's abilities."
+  },
+  {
+    "title": "Spirits: Skills",
+    "body": "Can be used after the spirit acquisition event.;When the spirit gauge recovers above a certain level, the number of uses is displayed on the left side of the gauge and you can use spirit summoning.;The skills equipped to the summoned spirit are displayed, and when you touch the equipped skill, the corresponding skill is used."
+  },
+  {
+    "title": "Item Crafting",
+    "body": "Smelting:;It consumes smelting stones or high-quality smelting stones, and if it fails, the item may be destroyed.;;Synthesis:;Combines two original items of Normal to Epic quality to create a new item of Normal to Epic quality. The new item carries over the original's options randomly.;;Special combination:;It can be used in Skill>Combination.;When you use a combination book, a new combination recipe is automatically registered.;1-3 types of materials are required and there is a chance of failure.;;General combination:;You can combine items handled by the blacksmith.;;Orb Combination:;Orbs can be bonded to equipment that has an empty socket.;Repeatedly combining the same orbs provides additional performance improvements.;Items may be destroyed when combining orbs."
+  },
+  {
+    "title": "Quests",
+    "body": "You can progress through the game by completing the goals given through quests.;Main Quest: This is a quest that is essential to progress through the game.;;Sub-Quest: It is unrelated to the game progress and can provide additional rewards.;As the game progresses, subquests that become impossible to complete are automatically deleted.;Subquests can be abandoned."
+  },
+  {
+    "title": "Expert Mode",
+    "body": "This is a bonus mode.;;Hold on: You must continue to defeat waves of enemies. The goal is to last as long as possible.;;Time Attack: You must defeat the boss within the time limit.;;Breakthrough: You must destroy the seal hidden on the map within the time limit and go down to the next floor. It consists of a total of 3 floors.;;In expert mode, only expert-only items can be used and cannot be saved."
+  },
+  {
+    "title": "Achievements",
+    "body": "This is an additional goal that has nothing to do with game progress.;If certain conditions are met while playing the game, it will be automatically achieved and registered, and you can check the achievements you have obtained so far in Main Menu > Achievements."
+  },
+  {
+    "title": "Online Storage",
+    "body": "Warehouse: Items acquired in a single game can be stored on the server.;;Transaction Money: This is game money needed to use exchanges and mail. Money earned from single games can be exchanged for trading money at a 1:1 ratio.;;Exchange: You can trade items with other users. When collecting the sales amount, 5% of transaction money is charged as a fee (exemption for sales amount less than 2000).;;Mailbox: You can send items or simple messages to other users. When sending by mail, a transaction fee of 1000 will be charged."
+  },
+  {
+    "title": "Deliberation information",
+    "body": " "
+  },
+  {
+    "title": "Support",
+    "body": "Game Name: Heroes 5;Version:;Company name: Electronic Arts Korea Co., Ltd.;Phone number: 02-559-8787;Website: www.eamobile.co.kr;Email: support@eamobile.co.kr"
+  },
+  {
+    "title": "Other",
+    "body": "Depending on the network data usage, the game charges an additional information usage fee of 0 won per packet (512 bytes) in addition to the basic communication fee.;When using the network overseas, international rates apply.;If you change your mobile phone number, you may not be able to play the game due to a copy protection authentication error.;On devices that support multitasking, the application may not pause during a call or when the multitasking key is activated.;;-The duration of cash item growth book/auto rooting is play time."
+  }
+]

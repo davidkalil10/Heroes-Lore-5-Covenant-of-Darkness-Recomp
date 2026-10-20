@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Heroes Lore 5</string>
+    <string name="app_author">David Kalil Braga (2026)</string>
+    <string name="app_description">Port Nativo C++17 + SDL2 por David Kalil Braga (2026)</string>
+</resources>

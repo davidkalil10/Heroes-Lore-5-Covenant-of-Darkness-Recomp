@@ -1,0 +1,28 @@
+Signature-Version: 1.0
+Created-By: 1.0 (Android SignApk)
+SHA1-Digest-Manifest: KDSMOD8F6uX0yFS9GXrpFOPvncc=
+
+Name: res/layout/main.xml
+SHA1-Digest: Jh2w2KqqarUBg/h0f18LAPwpV/Q=
+
+Name: AndroidManifest.xml
+SHA1-Digest: aloXskhsZSrNcOk3k8IA2Un67OQ=
+
+Name: lib/armeabi/libHeroesLore5.so
+SHA1-Digest: 1XEqWtF7DMmX9MH7IRQlR3tpLZA=
+
+Name: assets/data.vfs.mp3
+SHA1-Digest: eRNsRPi8P1DZ0tL1wBdkr3+bNAA=
+
+Name: res/drawable/icon.png
+SHA1-Digest: 89gPB8Fd0nevByoABa4nom+iQ1w=
+
+Name: assets/mtouchdevice.txt
+SHA1-Digest: L7/gfbNFUYsFArddsQfTg292TRk=
+
+Name: resources.arsc
+SHA1-Digest: aq6r+XTsk2nJd5eMNMWUGyB5TJ8=
+
+Name: classes.dex
+SHA1-Digest: IJAyEPD+rh1IKUIxpUu9RZUkfVg=
+

@@ -1,0 +1,1430 @@
+[
+  {
+    "id": 0,
+    "text": "Central Tower"
+  },
+  {
+    "id": 1,
+    "text": "Central;17 TH"
+  },
+  {
+    "id": 2,
+    "text": "Central;Underground"
+  },
+  {
+    "id": 3,
+    "text": "Central;9 TH"
+  },
+  {
+    "id": 4,
+    "text": "South;Island;Hwangnyeon"
+  },
+  {
+    "id": 5,
+    "text": "Eastern;Island;Hwangnyeon"
+  },
+  {
+    "id": 6,
+    "text": "Twilight Bridge"
+  },
+  {
+    "id": 7,
+    "text": "Northern;Bernal"
+  },
+  {
+    "id": 8,
+    "text": "Spiny;Spider Cave"
+  },
+  {
+    "id": 9,
+    "text": "Rockville"
+  },
+  {
+    "id": 10,
+    "text": "Ernest Mansion"
+  },
+  {
+    "id": 11,
+    "text": "Levan"
+  },
+  {
+    "id": 12,
+    "text": "Frozen;Sea"
+  },
+  {
+    "id": 13,
+    "text": "Screaming;Road"
+  },
+  {
+    "id": 14,
+    "text": "Advent Ark"
+  },
+  {
+    "id": 15,
+    "text": "Ice Cave"
+  },
+  {
+    "id": 16,
+    "text": "North Cave"
+  },
+  {
+    "id": 17,
+    "text": "Moitura;Plain"
+  },
+  {
+    "id": 18,
+    "text": "Doctrinal;Crown"
+  },
+  {
+    "id": 19,
+    "text": "Irem"
+  },
+  {
+    "id": 20,
+    "text": "Advent Ruins"
+  },
+  {
+    "id": 21,
+    "text": "Trident;Island"
+  },
+  {
+    "id": 22,
+    "text": "Underwater;Cave"
+  },
+  {
+    "id": 23,
+    "text": "Closed;Tunnel"
+  },
+  {
+    "id": 24,
+    "text": "Central;Island;Col Creek"
+  },
+  {
+    "id": 25,
+    "text": "East;Tunnel"
+  },
+  {
+    "id": 26,
+    "text": "King Sport"
+  },
+  {
+    "id": 27,
+    "text": "New Home Tyr"
+  },
+  {
+    "id": 28,
+    "text": "Meadow Hill East"
+  },
+  {
+    "id": 29,
+    "text": "Underground;Facilities"
+  },
+  {
+    "id": 30,
+    "text": "Western Holy Land"
+  },
+  {
+    "id": 31,
+    "text": "Guardian;Stronghold"
+  },
+  {
+    "id": 32,
+    "text": "Sanctuary Center"
+  },
+  {
+    "id": 33,
+    "text": "Twilight Island"
+  },
+  {
+    "id": 34,
+    "text": "Bernal Island"
+  },
+  {
+    "id": 35,
+    "text": "Silver Hill"
+  },
+  {
+    "id": 36,
+    "text": "Moitura Island"
+  },
+  {
+    "id": 37,
+    "text": "Trident Island"
+  },
+  {
+    "id": 38,
+    "text": "Col Creek Island"
+  },
+  {
+    "id": 39,
+    "text": "Meadow Hill"
+  },
+  {
+    "id": 40,
+    "text": "Holy Land"
+  },
+  {
+    "id": 41,
+    "text": "Current Quest"
+  },
+  {
+    "id": 42,
+    "text": "Story Quarter"
+  },
+  {
+    "id": 43,
+    "text": "Underground clean"
+  },
+  {
+    "id": 44,
+    "text": "Joining"
+  },
+  {
+    "id": 45,
+    "text": "Homecoming"
+  },
+  {
+    "id": 46,
+    "text": "Generous request"
+  },
+  {
+    "id": 47,
+    "text": "Research"
+  },
+  {
+    "id": 48,
+    "text": "Redhead man"
+  },
+  {
+    "id": 49,
+    "text": "The escape"
+  },
+  {
+    "id": 50,
+    "text": "Conditions"
+  },
+  {
+    "id": 51,
+    "text": "9th Street Lady"
+  },
+  {
+    "id": 52,
+    "text": "Rockville ship"
+  },
+  {
+    "id": 53,
+    "text": "Black iron"
+  },
+  {
+    "id": 54,
+    "text": "South"
+  },
+  {
+    "id": 55,
+    "text": "Camping place"
+  },
+  {
+    "id": 56,
+    "text": "Meat soup"
+  },
+  {
+    "id": 57,
+    "text": "To Bernal Island"
+  },
+  {
+    "id": 58,
+    "text": "Rockville"
+  },
+  {
+    "id": 59,
+    "text": "Ernest Mansion"
+  },
+  {
+    "id": 60,
+    "text": "Marc's client"
+  },
+  {
+    "id": 61,
+    "text": "Silvery earrings"
+  },
+  {
+    "id": 62,
+    "text": "Spiny Spider Cave"
+  },
+  {
+    "id": 63,
+    "text": "Escape"
+  },
+  {
+    "id": 64,
+    "text": "Target of Rufus"
+  },
+  {
+    "id": 65,
+    "text": "Aileen"
+  },
+  {
+    "id": 66,
+    "text": "Return"
+  },
+  {
+    "id": 67,
+    "text": "To Moitura Island"
+  },
+  {
+    "id": 68,
+    "text": "Travel by ship"
+  },
+  {
+    "id": 69,
+    "text": "Ancient raid"
+  },
+  {
+    "id": 70,
+    "text": "Theodore"
+  },
+  {
+    "id": 71,
+    "text": "Out of town"
+  },
+  {
+    "id": 72,
+    "text": "Blind faith"
+  },
+  {
+    "id": 73,
+    "text": "North cave"
+  },
+  {
+    "id": 74,
+    "text": "Rebel stronghold"
+  },
+  {
+    "id": 75,
+    "text": "Theodore"
+  },
+  {
+    "id": 76,
+    "text": "Aileen's ideal"
+  },
+  {
+    "id": 77,
+    "text": "Rest"
+  },
+  {
+    "id": 78,
+    "text": "Boundary system"
+  },
+  {
+    "id": 79,
+    "text": "Disappeared Aileen"
+  },
+  {
+    "id": 80,
+    "text": "Neved's Closing"
+  },
+  {
+    "id": 81,
+    "text": "Screaming Road"
+  },
+  {
+    "id": 82,
+    "text": "Ship of mystery"
+  },
+  {
+    "id": 83,
+    "text": "Wounded land"
+  },
+  {
+    "id": 84,
+    "text": "Guardian's fault"
+  },
+  {
+    "id": 85,
+    "text": "Pink-haired girl"
+  },
+  {
+    "id": 86,
+    "text": "Holy Land Neved"
+  },
+  {
+    "id": 87,
+    "text": "Sanctuary Center"
+  },
+  {
+    "id": 88,
+    "text": "Return to base"
+  },
+  {
+    "id": 89,
+    "text": "Tyr"
+  },
+  {
+    "id": 90,
+    "text": "Talks"
+  },
+  {
+    "id": 91,
+    "text": "Leadmeyer Street"
+  },
+  {
+    "id": 92,
+    "text": "Nightmare"
+  },
+  {
+    "id": 93,
+    "text": "explosive material"
+  },
+  {
+    "id": 94,
+    "text": "closed tunnel"
+  },
+  {
+    "id": 95,
+    "text": "To Kaz"
+  },
+  {
+    "id": 96,
+    "text": "Alex in crisis"
+  },
+  {
+    "id": 97,
+    "text": "Another magic circle"
+  },
+  {
+    "id": 98,
+    "text": "labyrinth under the sea"
+  },
+  {
+    "id": 99,
+    "text": "trident island"
+  },
+  {
+    "id": 100,
+    "text": "Key of Radiance"
+  },
+  {
+    "id": 101,
+    "text": "the oldest place"
+  },
+  {
+    "id": 102,
+    "text": "Tyr and Krad"
+  },
+  {
+    "id": 103,
+    "text": "abyss of ruins"
+  },
+  {
+    "id": 104,
+    "text": "eruption"
+  },
+  {
+    "id": 105,
+    "text": "To Kingsport"
+  },
+  {
+    "id": 106,
+    "text": "Attack of the Listener"
+  },
+  {
+    "id": 107,
+    "text": "origin of the successor"
+  },
+  {
+    "id": 108,
+    "text": "Kaz"
+  },
+  {
+    "id": 109,
+    "text": "underground facility"
+  },
+  {
+    "id": 110,
+    "text": "Mansion Escape"
+  },
+  {
+    "id": 111,
+    "text": "exposed target"
+  },
+  {
+    "id": 112,
+    "text": "Brother and Sister's Hideout"
+  },
+  {
+    "id": 113,
+    "text": "crash"
+  },
+  {
+    "id": 114,
+    "text": "Alex's Brand"
+  },
+  {
+    "id": 115,
+    "text": "Tiana"
+  },
+  {
+    "id": 116,
+    "text": "determination"
+  },
+  {
+    "id": 117,
+    "text": "join the revolutionary army"
+  },
+  {
+    "id": 118,
+    "text": "Back to the Holy Land"
+  },
+  {
+    "id": 119,
+    "text": "Church of the Advent"
+  },
+  {
+    "id": 120,
+    "text": "reinforced barrier"
+  },
+  {
+    "id": 121,
+    "text": "evidence of faith"
+  },
+  {
+    "id": 122,
+    "text": "precarious seal"
+  },
+  {
+    "id": 123,
+    "text": "Labyrinth of the Church"
+  },
+  {
+    "id": 124,
+    "text": "lack of strength"
+  },
+  {
+    "id": 125,
+    "text": "last target"
+  },
+  {
+    "id": 126,
+    "text": "hunting"
+  },
+  {
+    "id": 127,
+    "text": "Battle around the room"
+  },
+  {
+    "id": 128,
+    "text": "Would you like to give up the quest?"
+  },
+  {
+    "id": 129,
+    "text": "dog acquisition"
+  },
+  {
+    "id": 130,
+    "text": "FILE VER CHECK"
+  },
+  {
+    "id": 131,
+    "text": "FILE VER:"
+  },
+  {
+    "id": 132,
+    "text": "View rewards"
+  },
+  {
+    "id": 133,
+    "text": "View content"
+  },
+  {
+    "id": 134,
+    "text": "OK"
+  },
+  {
+    "id": 135,
+    "text": "in progress"
+  },
+  {
+    "id": 136,
+    "text": "???"
+  },
+  {
+    "id": 137,
+    "text": "Complete"
+  },
+  {
+    "id": 138,
+    "text": "Achievement level"
+  },
+  {
+    "id": 139,
+    "text": "gold"
+  },
+  {
+    "id": 140,
+    "text": "reward"
+  },
+  {
+    "id": 141,
+    "text": "experience"
+  },
+  {
+    "id": 142,
+    "text": "Stat Points"
+  },
+  {
+    "id": 143,
+    "text": "Skill Points"
+  },
+  {
+    "id": 144,
+    "text": "main"
+  },
+  {
+    "id": 145,
+    "text": "sub"
+  },
+  {
+    "id": 146,
+    "text": "*Abandon quest"
+  },
+  {
+    "id": 147,
+    "text": "Check on the map"
+  },
+  {
+    "id": 148,
+    "text": "#world map"
+  },
+  {
+    "id": 149,
+    "text": "#ZONE map"
+  },
+  {
+    "id": 150,
+    "text": "*Minimap OFF"
+  },
+  {
+    "id": 151,
+    "text": "*Minimap ON"
+  },
+  {
+    "id": 152,
+    "text": "Nice to meet you."
+  },
+  {
+    "id": 153,
+    "text": "underground goblin"
+  },
+  {
+    "id": 154,
+    "text": "bat"
+  },
+  {
+    "id": 155,
+    "text": "concealed battery"
+  },
+  {
+    "id": 156,
+    "text": "automatic battery"
+  },
+  {
+    "id": 157,
+    "text": "Ancient species test subject"
+  },
+  {
+    "id": 158,
+    "text": "excited bat"
+  },
+  {
+    "id": 159,
+    "text": "excited goblin"
+  },
+  {
+    "id": 160,
+    "text": "Unidentified monster"
+  },
+  {
+    "id": 161,
+    "text": "Unidentified monster"
+  },
+  {
+    "id": 162,
+    "text": "coastal scorpion"
+  },
+  {
+    "id": 163,
+    "text": "Goblin"
+  },
+  {
+    "id": 164,
+    "text": "wasp"
+  },
+  {
+    "id": 165,
+    "text": "wolf"
+  },
+  {
+    "id": 166,
+    "text": "leg guard"
+  },
+  {
+    "id": 167,
+    "text": "bridge guard captain"
+  },
+  {
+    "id": 168,
+    "text": "Large security robot"
+  },
+  {
+    "id": 169,
+    "text": "wasp"
+  },
+  {
+    "id": 170,
+    "text": "ostrich"
+  },
+  {
+    "id": 171,
+    "text": "concealed battery"
+  },
+  {
+    "id": 172,
+    "text": "Goblin in captivity"
+  },
+  {
+    "id": 173,
+    "text": "Rufus"
+  },
+  {
+    "id": 174,
+    "text": "Ancient Species"
+  },
+  {
+    "id": 175,
+    "text": "spore tentacles"
+  },
+  {
+    "id": 176,
+    "text": "scarecrow"
+  },
+  {
+    "id": 177,
+    "text": "bat"
+  },
+  {
+    "id": 178,
+    "text": "skeleton"
+  },
+  {
+    "id": 179,
+    "text": "black soldier"
+  },
+  {
+    "id": 180,
+    "text": "Evelyn"
+  },
+  {
+    "id": 181,
+    "text": "ice spirit"
+  },
+  {
+    "id": 182,
+    "text": "defensive battery"
+  },
+  {
+    "id": 183,
+    "text": "ice spirit"
+  },
+  {
+    "id": 184,
+    "text": "seal"
+  },
+  {
+    "id": 185,
+    "text": "snow girl"
+  },
+  {
+    "id": 186,
+    "text": "ice spirit"
+  },
+  {
+    "id": 187,
+    "text": "ice worm"
+  },
+  {
+    "id": 188,
+    "text": "Aileen"
+  },
+  {
+    "id": 189,
+    "text": "Aileen"
+  },
+  {
+    "id": 190,
+    "text": "wolf"
+  },
+  {
+    "id": 191,
+    "text": "evil spirit"
+  },
+  {
+    "id": 192,
+    "text": "deep sea person"
+  },
+  {
+    "id": 193,
+    "text": "ghost knight"
+  },
+  {
+    "id": 194,
+    "text": "ghost knight"
+  },
+  {
+    "id": 195,
+    "text": "Corrupted Box"
+  },
+  {
+    "id": 196,
+    "text": "reaper"
+  },
+  {
+    "id": 197,
+    "text": "remnants of a nightmare"
+  },
+  {
+    "id": 198,
+    "text": "Mimic"
+  },
+  {
+    "id": 199,
+    "text": "a vicious ostrich"
+  },
+  {
+    "id": 200,
+    "text": "daemon"
+  },
+  {
+    "id": 201,
+    "text": "pit bat"
+  },
+  {
+    "id": 202,
+    "text": "Anglerfish larvae"
+  },
+  {
+    "id": 203,
+    "text": "Alex"
+  },
+  {
+    "id": 204,
+    "text": "Alex"
+  },
+  {
+    "id": 205,
+    "text": "dead man"
+  },
+  {
+    "id": 206,
+    "text": "dead giant"
+  },
+  {
+    "id": 207,
+    "text": "skeleton"
+  },
+  {
+    "id": 208,
+    "text": "ammonite"
+  },
+  {
+    "id": 209,
+    "text": "lava spider"
+  },
+  {
+    "id": 210,
+    "text": "fire spirit"
+  },
+  {
+    "id": 211,
+    "text": "high apostle"
+  },
+  {
+    "id": 212,
+    "text": "old soldier"
+  },
+  {
+    "id": 213,
+    "text": "old guardian"
+  },
+  {
+    "id": 214,
+    "text": "Incomplete Advent"
+  },
+  {
+    "id": 215,
+    "text": "high apostle"
+  },
+  {
+    "id": 216,
+    "text": "evolution bat"
+  },
+  {
+    "id": 217,
+    "text": "Violent Goblin"
+  },
+  {
+    "id": 218,
+    "text": "poisonous scorpion"
+  },
+  {
+    "id": 219,
+    "text": "Clever Goblin"
+  },
+  {
+    "id": 220,
+    "text": "man-eating wasp"
+  },
+  {
+    "id": 221,
+    "text": "madness wolf"
+  },
+  {
+    "id": 222,
+    "text": "red eyes"
+  },
+  {
+    "id": 223,
+    "text": "elite guard"
+  },
+  {
+    "id": 224,
+    "text": "man-eating wasp"
+  },
+  {
+    "id": 225,
+    "text": "large ostrich"
+  },
+  {
+    "id": 226,
+    "text": "deserter"
+  },
+  {
+    "id": 227,
+    "text": "Reinforced starting type"
+  },
+  {
+    "id": 228,
+    "text": "Harmony Battery"
+  },
+  {
+    "id": 229,
+    "text": "Evolution Goblin"
+  },
+  {
+    "id": 230,
+    "text": "king of the dead"
+  },
+  {
+    "id": 231,
+    "text": "demon spores"
+  },
+  {
+    "id": 232,
+    "text": "devilish doll"
+  },
+  {
+    "id": 233,
+    "text": "evil spirit bat"
+  },
+  {
+    "id": 234,
+    "text": "skeleton"
+  },
+  {
+    "id": 235,
+    "text": "master of the play"
+  },
+  {
+    "id": 236,
+    "text": "ice soul"
+  },
+  {
+    "id": 237,
+    "text": "seal"
+  },
+  {
+    "id": 238,
+    "text": "ice soul"
+  },
+  {
+    "id": 239,
+    "text": "broken battery"
+  },
+  {
+    "id": 240,
+    "text": "ice soul"
+  },
+  {
+    "id": 241,
+    "text": "snow girl"
+  },
+  {
+    "id": 242,
+    "text": "Nightmare Watcher"
+  },
+  {
+    "id": 243,
+    "text": "Evolution Mimic"
+  },
+  {
+    "id": 244,
+    "text": "black swan"
+  },
+  {
+    "id": 245,
+    "text": "flasher bat"
+  },
+  {
+    "id": 246,
+    "text": "monkfish"
+  },
+  {
+    "id": 247,
+    "text": "daemon"
+  },
+  {
+    "id": 248,
+    "text": "crazy machine"
+  },
+  {
+    "id": 249,
+    "text": "skeleton"
+  },
+  {
+    "id": 250,
+    "text": "ammonite"
+  },
+  {
+    "id": 251,
+    "text": "lava spider"
+  },
+  {
+    "id": 252,
+    "text": "fire spirit"
+  },
+  {
+    "id": 253,
+    "text": "Incomplete Advent"
+  },
+  {
+    "id": 254,
+    "text": "high apostle"
+  },
+  {
+    "id": 255,
+    "text": "Berserk Wolf"
+  },
+  {
+    "id": 256,
+    "text": "demon of the deep sea"
+  },
+  {
+    "id": 257,
+    "text": "deep sea person"
+  },
+  {
+    "id": 258,
+    "text": "ghost knight"
+  },
+  {
+    "id": 259,
+    "text": "evil spirit"
+  },
+  {
+    "id": 260,
+    "text": "Rurain"
+  },
+  {
+    "id": 261,
+    "text": "Black Army Assault Troop"
+  },
+  {
+    "id": 262,
+    "text": "black reinforcement"
+  },
+  {
+    "id": 263,
+    "text": "landmine"
+  },
+  {
+    "id": 264,
+    "text": "fixed battery"
+  },
+  {
+    "id": 265,
+    "text": "Chris"
+  },
+  {
+    "id": 266,
+    "text": "landmine"
+  },
+  {
+    "id": 267,
+    "text": "security robot"
+  },
+  {
+    "id": 268,
+    "text": "Corrupted Box"
+  },
+  {
+    "id": 269,
+    "text": "reaper"
+  },
+  {
+    "id": 270,
+    "text": "Rufus"
+  },
+  {
+    "id": 271,
+    "text": "old soldier"
+  },
+  {
+    "id": 272,
+    "text": "old guardian"
+  },
+  {
+    "id": 273,
+    "text": "rotten dish"
+  },
+  {
+    "id": 274,
+    "text": "rotten dish"
+  },
+  {
+    "id": 275,
+    "text": "high apostle"
+  },
+  {
+    "id": 276,
+    "text": "Possessed Rufus"
+  },
+  {
+    "id": 277,
+    "text": "Possessed Rufus"
+  },
+  {
+    "id": 278,
+    "text": "high apostle"
+  },
+  {
+    "id": 279,
+    "text": "Theodore"
+  },
+  {
+    "id": 280,
+    "text": "Theodore"
+  },
+  {
+    "id": 281,
+    "text": "fragment of memory"
+  },
+  {
+    "id": 282,
+    "text": "security robot"
+  },
+  {
+    "id": 283,
+    "text": "black reinforcements"
+  },
+  {
+    "id": 284,
+    "text": "Black Army Elite"
+  },
+  {
+    "id": 285,
+    "text": "Possessed Knight"
+  },
+  {
+    "id": 286,
+    "text": "Hand of the Advent"
+  },
+  {
+    "id": 287,
+    "text": "high apostle"
+  },
+  {
+    "id": 288,
+    "text": "Althena"
+  },
+  {
+    "id": 289,
+    "text": "Althena"
+  },
+  {
+    "id": 290,
+    "text": "Althena"
+  },
+  {
+    "id": 291,
+    "text": "box"
+  },
+  {
+    "id": 292,
+    "text": "ice block"
+  },
+  {
+    "id": 293,
+    "text": "mineral"
+  },
+  {
+    "id": 294,
+    "text": "grass"
+  },
+  {
+    "id": 295,
+    "text": "rocks"
+  },
+  {
+    "id": 296,
+    "text": "summon"
+  },
+  {
+    "id": 297,
+    "text": "ambush"
+  },
+  {
+    "id": 298,
+    "text": "mercenary leader"
+  },
+  {
+    "id": 299,
+    "text": "supply unit"
+  },
+  {
+    "id": 300,
+    "text": "thunderbird"
+  },
+  {
+    "id": 301,
+    "text": "Boss Goblin"
+  },
+  {
+    "id": 302,
+    "text": "goblin thief"
+  },
+  {
+    "id": 303,
+    "text": "white bear"
+  },
+  {
+    "id": 304,
+    "text": "leader of thieves"
+  },
+  {
+    "id": 305,
+    "text": "bandits"
+  },
+  {
+    "id": 306,
+    "text": "worm"
+  },
+  {
+    "id": 307,
+    "text": "union mercenary"
+  },
+  {
+    "id": 308,
+    "text": "guard"
+  },
+  {
+    "id": 309,
+    "text": "Guard Captain"
+  },
+  {
+    "id": 310,
+    "text": "Reinforced Soldiers"
+  },
+  {
+    "id": 311,
+    "text": "remnants"
+  },
+  {
+    "id": 312,
+    "text": "Monster 1"
+  },
+  {
+    "id": 313,
+    "text": "Monster 2"
+  },
+  {
+    "id": 314,
+    "text": "Monster 3"
+  },
+  {
+    "id": 315,
+    "text": "Monster 4"
+  },
+  {
+    "id": 316,
+    "text": "Recipes"
+  },
+  {
+    "id": 317,
+    "text": "Yes"
+  },
+  {
+    "id": 318,
+    "text": "No"
+  },
+  {
+    "id": 319,
+    "text": "Learn this skill?"
+  },
+  {
+    "id": 320,
+    "text": "Abandoned the quest."
+  },
+  {
+    "id": 321,
+    "text": "Quest Complete"
+  },
+  {
+    "id": 322,
+    "text": "Purchased."
+  },
+  {
+    "id": 323,
+    "text": "hold on"
+  },
+  {
+    "id": 324,
+    "text": "Time Attack"
+  },
+  {
+    "id": 325,
+    "text": "breakthrough"
+  },
+  {
+    "id": 326,
+    "text": "Expert mode"
+  },
+  {
+    "id": 327,
+    "text": "in;We won."
+  },
+  {
+    "id": 328,
+    "text": "in;Failed."
+  },
+  {
+    "id": 329,
+    "text": "victory!"
+  },
+  {
+    "id": 330,
+    "text": "Fail!"
+  },
+  {
+    "id": 331,
+    "text": "number of monsters"
+  },
+  {
+    "id": 332,
+    "text": "remaining time"
+  },
+  {
+    "id": 333,
+    "text": "remaining stamina"
+  },
+  {
+    "id": 334,
+    "text": "Number of stages"
+  },
+  {
+    "id": 335,
+    "text": "Breakthrough time"
+  },
+  {
+    "id": 336,
+    "text": "remaining stamina"
+  },
+  {
+    "id": 337,
+    "text": "result"
+  },
+  {
+    "id": 338,
+    "text": "final score"
+  },
+  {
+    "id": 339,
+    "text": "Connecting"
+  },
+  {
+    "id": 340,
+    "text": "Send"
+  },
+  {
+    "id": 341,
+    "text": "Recieve"
+  },
+  {
+    "id": 342,
+    "text": "The server is not in good condition. Please try again later."
+  },
+  {
+    "id": 343,
+    "text": "to;I created a nickname."
+  },
+  {
+    "id": 344,
+    "text": "Please create a nickname and try it."
+  },
+  {
+    "id": 345,
+    "text": "There is not enough storage space. Please free up some space and try again."
+  },
+  {
+    "id": 346,
+    "text": "The current file is the latest version."
+  },
+  {
+    "id": 347,
+    "text": "The update has been completed.;Force quit the game. Please start again."
+  },
+  {
+    "id": 348,
+    "text": "The email has been sent."
+  },
+  {
+    "id": 349,
+    "text": "Overall ranking"
+  },
+  {
+    "id": 350,
+    "text": "1st place nickname"
+  },
+  {
+    "id": 351,
+    "text": "1st place score"
+  },
+  {
+    "id": 352,
+    "text": "my ranking"
+  },
+  {
+    "id": 353,
+    "text": "Address book ranking"
+  },
+  {
+    "id": 354,
+    "text": "stomach"
+  },
+  {
+    "id": 355,
+    "text": "Used."
+  },
+  {
+    "id": 356,
+    "text": "Obtained."
+  }
+]

@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+HERE="$(dirname "$(readlink -f "${0}")")"
+export PATH="${HERE}/usr/bin:${PATH}"
+export LD_LIBRARY_PATH="${HERE}/usr/lib:${HERE}/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}"
+cd "${HERE}"
+exec "${HERE}/usr/bin/heroes_lore_5" "$@"

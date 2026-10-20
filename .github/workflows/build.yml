@@ -1,0 +1,307 @@
+name: Build Multiplatform & Release (Switch, Windows, Linux, Android)
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Publicar Release no GitHub?'
+        required: true
+        type: boolean
+        default: false
+      release_tag:
+        description: 'Tag / Versao do Release (ex: v1.0.0)'
+        required: false
+        default: 'v1.0.0'
+
+jobs:
+  # ==============================================================================
+  # 1. Nintendo Switch (.nro Homebrew)
+  # ==============================================================================
+  build-switch:
+    name: Nintendo Switch (.nro)
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkita64:latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure Git Safe Directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Prepare RomFS Assets
+        run: |
+          python3 tools/prepare_switch_romfs.py
+          ls -la romfs
+
+      - name: Compile Heroes Lore 5 NRO
+        run: |
+          export DEVKITPRO=/opt/devkitpro
+          export DEVKITA64=$DEVKITPRO/devkitA64
+          export PORTLIBS=$DEVKITPRO/portlibs/switch
+          export LIBNX=$DEVKITPRO/libnx
+          export PATH=$DEVKITPRO/tools/bin:$PATH
+          make -f Makefile.switch
+
+      - name: Verify Output
+        run: |
+          ls -la heroes_lore_5.nro
+
+      - name: Upload Switch Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: heroes_lore_5_switch_nro
+          path: heroes_lore_5.nro
+
+  # ==============================================================================
+  # 2. Windows x64 (Portable ZIP)
+  # ==============================================================================
+  build-windows:
+    name: Windows x64 (ZIP)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2 UCRT64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-SDL2
+            zip
+
+      - name: Compile Windows Binary
+        shell: msys2 {0}
+        run: |
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+
+      - name: Package Windows Portable Release
+        shell: msys2 {0}
+        run: |
+          mkdir -p dist_windows
+          cp build/hl5.exe dist_windows/heroes_lore_5.exe
+          cp build/hl5.exe dist_windows/hl5.exe
+          if [ -d "$MINGW_PREFIX/bin" ]; then
+            cp "$MINGW_PREFIX"/bin/SDL2.dll dist_windows/ 2>/dev/null || true
+            cp "$MINGW_PREFIX"/bin/libgcc_s_seh-1.dll dist_windows/ 2>/dev/null || true
+            cp "$MINGW_PREFIX"/bin/libstdc++-6.dll dist_windows/ 2>/dev/null || true
+            cp "$MINGW_PREFIX"/bin/libwinpthread-1.dll dist_windows/ 2>/dev/null || true
+          fi
+          cp reference/extracted_apk/assets/data.vfs.mp3 dist_windows/ 2>/dev/null || cp dist/data.vfs.mp3 dist_windows/ 2>/dev/null || true
+          cp reference/extracted_apk/lib/armeabi/libHeroesLore5.so dist_windows/ 2>/dev/null || cp dist/libHeroesLore5.so dist_windows/ 2>/dev/null || true
+          cp data/dict.bin dist_windows/ 2>/dev/null || cp dist/dict.bin dist_windows/ 2>/dev/null || true
+          if [ -d "data" ]; then
+            cp -r data dist_windows/
+          fi
+          if [ -d "assets_override" ]; then
+            cp -r assets_override dist_windows/
+          fi
+          if [ -d "dist/c" ]; then
+            cp -r dist/c dist_windows/
+          fi
+          cd dist_windows && zip -r ../heroes_lore_5_windows_x64.zip .
+          cd ..
+          cp build/hl5.exe ./heroes_lore_5.exe
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: heroes_lore_5_windows_zip
+          path: |
+            heroes_lore_5_windows_x64.zip
+            heroes_lore_5.exe
+
+  # ==============================================================================
+  # 3. Linux x86_64 (AppImage Portatil / Steam Deck)
+  # ==============================================================================
+  build-linux:
+    name: Linux x86_64 (AppImage)
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Linux Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            libsdl2-dev \
+            pkg-config \
+            wget \
+            file
+
+      - name: Compile Linux Binary
+        run: |
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+
+      - name: Prepare AppDir
+        run: |
+          python3 tools/prepare_appimage.py
+
+      - name: Build AppImage with appimagetool
+        run: |
+          wget -q https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+          ./appimagetool-x86_64.AppImage --appimage-extract
+          ARCH=x86_64 ./squashfs-root/AppRun AppDir heroes_lore_5_linux_x86_64.AppImage
+          chmod +x heroes_lore_5_linux_x86_64.AppImage
+          ls -lh heroes_lore_5_linux_x86_64.AppImage
+
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: heroes_lore_5_linux_appimage
+          path: heroes_lore_5_linux_x86_64.AppImage
+
+  # ==============================================================================
+  # 4. Android (APKs Universal & ARM64)
+  # ==============================================================================
+  build-android:
+    name: Android (APK)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17 with Gradle Cache
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Cache Third-Party SDL2
+        id: cache-sdl
+        uses: actions/cache@v4
+        with:
+          path: third_party/SDL2
+          key: ${{ runner.os }}-sdl2-2.30.12
+
+      - name: Fetch Third-Party SDL2
+        run: |
+          mkdir -p third_party
+          if [ ! -f "third_party/SDL2/include/SDL.h" ]; then
+            rm -rf third_party/SDL2
+            git clone --depth 1 --branch release-2.30.12 https://github.com/libsdl-org/SDL.git third_party/SDL2
+          fi
+
+      - name: Prepare Android Assets
+        run: |
+          python3 tools/prepare_android_assets.py
+
+      - name: Configure Android NDK from Runner Environment
+        run: |
+          echo "=== Android SDK & NDK Pre-instalados no Runner ==="
+          ls -la "$ANDROID_SDK_ROOT/ndk" 2>/dev/null || true
+          ls -la "$ANDROID_SDK_ROOT/cmake" 2>/dev/null || true
+          ls -la "$ANDROID_SDK_ROOT/build-tools" 2>/dev/null || true
+
+          NDK_VER=""
+          if [ -n "$ANDROID_NDK_HOME" ] && [ -d "$ANDROID_NDK_HOME" ]; then
+            NDK_VER=$(basename "$ANDROID_NDK_HOME")
+          elif [ -d "$ANDROID_SDK_ROOT/ndk" ]; then
+            NDK_VER=$(ls -1 "$ANDROID_SDK_ROOT/ndk" 2>/dev/null | sort -V | tail -n 1)
+          fi
+
+          if [ -n "$NDK_VER" ]; then
+            echo "ANDROID_NDK_VERSION=$NDK_VER" >> $GITHUB_ENV
+            echo "NDK detectado com sucesso: $NDK_VER"
+          else
+            echo "Aviso: Nenhum NDK pre-instalado detectado automaticamente."
+          fi
+
+      - name: Build Android Release APKs
+        run: |
+          cd android
+          chmod +x gradlew
+          if [ -n "$ANDROID_NDK_VERSION" ]; then
+            ./gradlew assembleRelease -Pandroid.ndkVersion="$ANDROID_NDK_VERSION" --stacktrace
+          else
+            ./gradlew assembleRelease --stacktrace
+          fi
+
+      - name: Organize APK Artifacts
+        run: |
+          mkdir -p apks
+          find android/app/build/outputs/apk/release/ -name "*.apk" -exec cp {} apks/ \;
+          ls -la apks/
+          cp apks/*universal*.apk heroes_lore_5_android_universal.apk 2>/dev/null || true
+          cp apks/*arm64-v8a*.apk heroes_lore_5_android_arm64.apk 2>/dev/null || true
+
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: heroes_lore_5_android_apks
+          path: |
+            heroes_lore_5_android_universal.apk
+            heroes_lore_5_android_arm64.apk
+
+  # ==============================================================================
+  # 5. GitHub Release Automatico (Somente quando houver tag v* ou dispatch com release: true)
+  # ==============================================================================
+  release:
+    name: Publicar Release Multiplataforma
+    needs: [build-switch, build-windows, build-linux, build-android]
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.create_release == true)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Baixar Artefato Switch
+        uses: actions/download-artifact@v4
+        with:
+          name: heroes_lore_5_switch_nro
+
+      - name: Baixar Artefato Windows
+        uses: actions/download-artifact@v4
+        with:
+          name: heroes_lore_5_windows_zip
+
+      - name: Baixar Artefato Linux
+        uses: actions/download-artifact@v4
+        with:
+          name: heroes_lore_5_linux_appimage
+
+      - name: Baixar Artefato Android
+        uses: actions/download-artifact@v4
+        with:
+          name: heroes_lore_5_android_apks
+
+      - name: Listar Arquivos do Release
+        run: ls -la
+
+      - name: Criar GitHub Release Oficial
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Heroes Lore 5: Covenant of Darkness ${{ github.ref_name || inputs.release_tag }}"
+          tag_name: ${{ github.ref_name || inputs.release_tag }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            heroes_lore_5.nro
+            heroes_lore_5.exe
+            heroes_lore_5_windows_x64.zip
+            heroes_lore_5_linux_x86_64.AppImage
+            heroes_lore_5_android_universal.apk
+            heroes_lore_5_android_arm64.apk

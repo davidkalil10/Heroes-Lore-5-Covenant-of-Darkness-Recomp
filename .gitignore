@@ -1,0 +1,60 @@
+# Build artifacts
+build/
+build_switch/
+dist/
+dist_windows/
+AppDir/
+squashfs-root/
+romfs/
+*.AppImage
+*.exe
+*.dll
+*.a
+*.o
+*.obj
+*.bmp
+*.log
+*.err
+dumps/
+dumps_*/
+dist/dumps_*/
+run.log
+run_*.log
+
+# Extracted caches (pode ser recriado com tools/extract_vfs.py)
+reference/extracted_vfs/
+
+# Android build outputs
+.gradle/
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/.cxx/
+android/app/.cxx/
+android/app/src/main/assets/
+*.apk
+*.aab
+
+# Nintendo Switch build outputs
+*.nro
+*.nacp
+*.elf
+
+# Cloned third_party repos
+third_party/SDL2/
+
+# Save and runtime data
+data/internal/*
+!data/internal/.gitkeep
+data/external/*
+!data/external/.gitkeep
+
+# IDE and OS
+.idea/
+.vscode/
+*.user
+Thumbs.db
+Desktop.ini
+__pycache__/
+*.pyc

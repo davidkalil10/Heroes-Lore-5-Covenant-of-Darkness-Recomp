@@ -1,0 +1,27 @@
+Manifest-Version: 1.0
+Created-By: 1.0 (Android SignApk)
+
+Name: res/layout/main.xml
+SHA1-Digest: bkeQHcEJQDGHXFbEhNaycy/iAUQ=
+
+Name: lib/armeabi/libHeroesLore5.so
+SHA1-Digest: f+XyVpmqY89HAdyjI6SstW5Df3s=
+
+Name: AndroidManifest.xml
+SHA1-Digest: Agd+dR5yzRybWU0KfqnUl9OVmC8=
+
+Name: res/drawable/icon.png
+SHA1-Digest: 4b4EEdWHSXRspNKS7TKKus9vsF0=
+
+Name: assets/data.vfs.mp3
+SHA1-Digest: ftWg6HOxk+BNxm7OQdfb251ySi8=
+
+Name: assets/mtouchdevice.txt
+SHA1-Digest: GK4D67TeLPrxg17+faYhDNx35Zc=
+
+Name: resources.arsc
+SHA1-Digest: XqM8t8HhtaVrXAlOzDHGxvFCF/g=
+
+Name: classes.dex
+SHA1-Digest: cf8eqb6SKbRdV+WstTIb9LMyXsU=
+

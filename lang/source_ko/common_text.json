@@ -1,0 +1,1406 @@
+[
+  {
+    "id": 0,
+    "text": "STATUS"
+  },
+  {
+    "id": 1,
+    "text": "BAG"
+  },
+  {
+    "id": 2,
+    "text": "EQUIP"
+  },
+  {
+    "id": 3,
+    "text": "SKILL"
+  },
+  {
+    "id": 4,
+    "text": "MAGIC"
+  },
+  {
+    "id": 5,
+    "text": "SHARGE"
+  },
+  {
+    "id": 6,
+    "text": "GIRL"
+  },
+  {
+    "id": 7,
+    "text": "QUEST"
+  },
+  {
+    "id": 8,
+    "text": "SYSTEM"
+  },
+  {
+    "id": 9,
+    "text": "Schulz"
+  },
+  {
+    "id": 10,
+    "text": "HP"
+  },
+  {
+    "id": 11,
+    "text": "SP"
+  },
+  {
+    "id": 12,
+    "text": "EXP"
+  },
+  {
+    "id": 13,
+    "text": "LV"
+  },
+  {
+    "id": 14,
+    "text": "Point"
+  },
+  {
+    "id": 15,
+    "text": "FORC"
+  },
+  {
+    "id": 16,
+    "text": "AGIL"
+  },
+  {
+    "id": 17,
+    "text": "HEAL"
+  },
+  {
+    "id": 18,
+    "text": "SPIR"
+  },
+  {
+    "id": 19,
+    "text": "Coins"
+  },
+  {
+    "id": 20,
+    "text": "#DETAIL"
+  },
+  {
+    "id": 21,
+    "text": "#BACK"
+  },
+  {
+    "id": 22,
+    "text": "0.SORT ITEMS"
+  },
+  {
+    "id": 23,
+    "text": "Min. Level"
+  },
+  {
+    "id": 24,
+    "text": "Power Def."
+  },
+  {
+    "id": 25,
+    "text": "Power ATK"
+  },
+  {
+    "id": 26,
+    "text": "Power Phys."
+  },
+  {
+    "id": 27,
+    "text": "Power Magic"
+  },
+  {
+    "id": 28,
+    "text": "Resistance"
+  },
+  {
+    "id": 29,
+    "text": "Speed Hit"
+  },
+  {
+    "id": 30,
+    "text": "Evasion"
+  },
+  {
+    "id": 31,
+    "text": "Accuracy"
+  },
+  {
+    "id": 32,
+    "text": "*CANCEL"
+  },
+  {
+    "id": 33,
+    "text": "Melee ATK"
+  },
+  {
+    "id": 34,
+    "text": "Ranged ATK"
+  },
+  {
+    "id": 35,
+    "text": "Magic ATK"
+  },
+  {
+    "id": 36,
+    "text": "Phys. Def."
+  },
+  {
+    "id": 37,
+    "text": "Magic Def."
+  },
+  {
+    "id": 38,
+    "text": "Melee Hit"
+  },
+  {
+    "id": 39,
+    "text": "Ranged Hit"
+  },
+  {
+    "id": 40,
+    "text": "Phys. Evas."
+  },
+  {
+    "id": 41,
+    "text": "Shield Def."
+  },
+  {
+    "id": 42,
+    "text": "Magic Hit"
+  },
+  {
+    "id": 43,
+    "text": "Magic Res."
+  },
+  {
+    "id": 44,
+    "text": "Critical"
+  },
+  {
+    "id": 45,
+    "text": "Critic. Res."
+  },
+  {
+    "id": 46,
+    "text": "ALL"
+  },
+  {
+    "id": 47,
+    "text": "MAIN"
+  },
+  {
+    "id": 48,
+    "text": "RANK"
+  },
+  {
+    "id": 49,
+    "text": "Summon;elemental, Len.;Using the arrow keys,;select 1 of 4 spirit spells, registered in the menu."
+  },
+  {
+    "id": 50,
+    "text": "YES"
+  },
+  {
+    "id": 51,
+    "text": "CANCEL"
+  },
+  {
+    "id": 52,
+    "text": "THROW AWAY"
+  },
+  {
+    "id": 53,
+    "text": "TO DISSASEMBLE"
+  },
+  {
+    "id": 54,
+    "text": "ADD SKILL"
+  },
+  {
+    "id": 55,
+    "text": "To use"
+  },
+  {
+    "id": 56,
+    "text": "OK"
+  },
+  {
+    "id": 57,
+    "text": "BACK"
+  },
+  {
+    "id": 58,
+    "text": "Do you want to throw;away item?"
+  },
+  {
+    "id": 59,
+    "text": "Disassemble the items. You can get money, items or; balls. The disassembled; item will disappear."
+  },
+  {
+    "id": 60,
+    "text": "Disassemble items."
+  },
+  {
+    "id": 61,
+    "text": "(A)END"
+  },
+  {
+    "id": 62,
+    "text": "Item was created."
+  },
+  {
+    "id": 63,
+    "text": "This item cannot be dismantled."
+  },
+  {
+    "id": 64,
+    "text": "GOLD"
+  },
+  {
+    "id": 65,
+    "text": "Item already created."
+  },
+  {
+    "id": 66,
+    "text": "WEARING"
+  },
+  {
+    "id": 67,
+    "text": "REMOVE"
+  },
+  {
+    "id": 68,
+    "text": "SORT"
+  },
+  {
+    "id": 69,
+    "text": "DASH"
+  },
+  {
+    "id": 70,
+    "text": "JUDO"
+  },
+  {
+    "id": 71,
+    "text": "PRIV"
+  },
+  {
+    "id": 72,
+    "text": "FAST"
+  },
+  {
+    "id": 73,
+    "text": "RESI"
+  },
+  {
+    "id": 74,
+    "text": "SHOT"
+  },
+  {
+    "id": 75,
+    "text": "LIFE"
+  },
+  {
+    "id": 76,
+    "text": "PLOY"
+  },
+  {
+    "id": 77,
+    "text": "RUSH"
+  },
+  {
+    "id": 78,
+    "text": "EGIS"
+  },
+  {
+    "id": 79,
+    "text": "DRIL"
+  },
+  {
+    "id": 80,
+    "text": "Total Skill"
+  },
+  {
+    "id": 81,
+    "text": "Skill Rank"
+  },
+  {
+    "id": 82,
+    "text": "Extra Skill"
+  },
+  {
+    "id": 83,
+    "text": "PURCHASE SKILL"
+  },
+  {
+    "id": 84,
+    "text": "BUY ITEMS"
+  },
+  {
+    "id": 85,
+    "text": "SALE ITEMS"
+  },
+  {
+    "id": 86,
+    "text": "GENERAL REFINEMENT"
+  },
+  {
+    "id": 87,
+    "text": "ADVANCED REFINEMENT"
+  },
+  {
+    "id": 88,
+    "text": "COMBINED"
+  },
+  {
+    "id": 89,
+    "text": "GENERAL COMBINED"
+  },
+  {
+    "id": 90,
+    "text": "I do not have enough;money."
+  },
+  {
+    "id": 91,
+    "text": "Do you want to buy?"
+  },
+  {
+    "id": 92,
+    "text": "Your bag is full."
+  },
+  {
+    "id": 93,
+    "text": "Item purchased."
+  },
+  {
+    "id": 94,
+    "text": "Item has been sold."
+  },
+  {
+    "id": 95,
+    "text": "ARMS"
+  },
+  {
+    "id": 96,
+    "text": "MORE"
+  },
+  {
+    "id": 97,
+    "text": "You threw the item away."
+  },
+  {
+    "id": 98,
+    "text": "It is an item which;cannot be thrown away."
+  },
+  {
+    "id": 99,
+    "text": "This item cannot be sold."
+  },
+  {
+    "id": 100,
+    "text": "Do you want to sell this;item?"
+  },
+  {
+    "id": 101,
+    "text": "Improve item"
+  },
+  {
+    "id": 102,
+    "text": "GENERAL"
+  },
+  {
+    "id": 103,
+    "text": "ADVANCED"
+  },
+  {
+    "id": 104,
+    "text": "Success rate"
+  },
+  {
+    "id": 105,
+    "text": "Refine rate"
+  },
+  {
+    "id": 106,
+    "text": "Cost"
+  },
+  {
+    "id": 107,
+    "text": "IMPROVE"
+  },
+  {
+    "id": 108,
+    "text": "Do you want to improve;item?"
+  },
+  {
+    "id": 109,
+    "text": "This item cannot be improved."
+  },
+  {
+    "id": 110,
+    "text": "Select an item to improve."
+  },
+  {
+    "id": 111,
+    "text": "No items for improvement."
+  },
+  {
+    "id": 112,
+    "text": "Select your equipment."
+  },
+  {
+    "id": 113,
+    "text": "Great Success"
+  },
+  {
+    "id": 114,
+    "text": "Success"
+  },
+  {
+    "id": 115,
+    "text": "Failed: no change"
+  },
+  {
+    "id": 116,
+    "text": "Failed: Unrefined"
+  },
+  {
+    "id": 117,
+    "text": "Failed: Item Destroyed"
+  },
+  {
+    "id": 118,
+    "text": "Success: improved Max"
+  },
+  {
+    "id": 119,
+    "text": "This item must not be worn."
+  },
+  {
+    "id": 120,
+    "text": "It can be worn."
+  },
+  {
+    "id": 121,
+    "text": "This item is currently;use."
+  },
+  {
+    "id": 122,
+    "text": "Item to combine"
+  },
+  {
+    "id": 123,
+    "text": "Sphere to combine"
+  },
+  {
+    "id": 124,
+    "text": "Offerings to combine"
+  },
+  {
+    "id": 125,
+    "text": "This item cannot be combined."
+  },
+  {
+    "id": 126,
+    "text": "Not one sphere no."
+  },
+  {
+    "id": 127,
+    "text": "No offers."
+  },
+  {
+    "id": 128,
+    "text": "Do you want to combine?"
+  },
+  {
+    "id": 129,
+    "text": "Select a sphere."
+  },
+  {
+    "id": 130,
+    "text": "0.RELEASE"
+  },
+  {
+    "id": 131,
+    "text": "Success: combined"
+  },
+  {
+    "id": 132,
+    "text": "Failed: item destroyed"
+  },
+  {
+    "id": 133,
+    "text": "Failed: no change"
+  },
+  {
+    "id": 134,
+    "text": "Failed: combine item"
+  },
+  {
+    "id": 135,
+    "text": "Select item to combine"
+  },
+  {
+    "id": 136,
+    "text": "Do you want to combine?"
+  },
+  {
+    "id": 137,
+    "text": "Success: �ombined"
+  },
+  {
+    "id": 138,
+    "text": "Failed: combine"
+  },
+  {
+    "id": 139,
+    "text": "Not enough ingredients."
+  },
+  {
+    "id": 140,
+    "text": "1st"
+  },
+  {
+    "id": 141,
+    "text": "2nd"
+  },
+  {
+    "id": 142,
+    "text": "3rd"
+  },
+  {
+    "id": 143,
+    "text": "4th"
+  },
+  {
+    "id": 144,
+    "text": "5th"
+  },
+  {
+    "id": 145,
+    "text": "This skill cannot be registered."
+  },
+  {
+    "id": 146,
+    "text": "This skill cannot be learned."
+  },
+  {
+    "id": 147,
+    "text": "Do you want to use this?"
+  },
+  {
+    "id": 148,
+    "text": "I learned (a lot)"
+  },
+  {
+    "id": 149,
+    "text": "SYNTESIS"
+  },
+  {
+    "id": 150,
+    "text": "COMBINED"
+  },
+  {
+    "id": 151,
+    "text": "SYNTESIS START"
+  },
+  {
+    "id": 152,
+    "text": "This item cannot be;synthesized."
+  },
+  {
+    "id": 153,
+    "text": "0.DESELECT"
+  },
+  {
+    "id": 154,
+    "text": "Do you want to synthesize it?"
+  },
+  {
+    "id": 155,
+    "text": "Please, select an item."
+  },
+  {
+    "id": 156,
+    "text": "Success: synthesized"
+  },
+  {
+    "id": 157,
+    "text": "Failed: synthesize"
+  },
+  {
+    "id": 158,
+    "text": "BASIC/EQUIP"
+  },
+  {
+    "id": 159,
+    "text": "ACTIVE SKILLS"
+  },
+  {
+    "id": 160,
+    "text": "Len"
+  },
+  {
+    "id": 161,
+    "text": "Magic Attack"
+  },
+  {
+    "id": 162,
+    "text": "equipment"
+  },
+  {
+    "id": 163,
+    "text": "CHANGE"
+  },
+  {
+    "id": 164,
+    "text": "Passive skill."
+  },
+  {
+    "id": 165,
+    "text": "Not enough space in the bag."
+  },
+  {
+    "id": 166,
+    "text": "GAME;START"
+  },
+  {
+    "id": 167,
+    "text": "EXPERT"
+  },
+  {
+    "id": 168,
+    "text": "STORAGE"
+  },
+  {
+    "id": 169,
+    "text": "UPDATE"
+  },
+  {
+    "id": 170,
+    "text": "SETTINGS"
+  },
+  {
+    "id": 171,
+    "text": "PROGRESS"
+  },
+  {
+    "id": 172,
+    "text": "HELP"
+  },
+  {
+    "id": 173,
+    "text": "COMMUNITY"
+  },
+  {
+    "id": 174,
+    "text": "GAME END"
+  },
+  {
+    "id": 175,
+    "text": "SELECT SLOT"
+  },
+  {
+    "id": 176,
+    "text": "SELECT CLASS"
+  },
+  {
+    "id": 177,
+    "text": "Do you want to create;a new character?"
+  },
+  {
+    "id": 178,
+    "text": "Warrior"
+  },
+  {
+    "id": 179,
+    "text": "Killer"
+  },
+  {
+    "id": 180,
+    "text": "Gunner"
+  },
+  {
+    "id": 181,
+    "text": "Knight"
+  },
+  {
+    "id": 182,
+    "text": "empty"
+  },
+  {
+    "id": 183,
+    "text": "PlayTime"
+  },
+  {
+    "id": 184,
+    "text": "Do you want to continue;the game?"
+  },
+  {
+    "id": 185,
+    "text": "Level"
+  },
+  {
+    "id": 186,
+    "text": "Do you want to save;the game?"
+  },
+  {
+    "id": 187,
+    "text": "Do you want to exit;the game?"
+  },
+  {
+    "id": 188,
+    "text": "Saved."
+  },
+  {
+    "id": 189,
+    "text": "SAVE"
+  },
+  {
+    "id": 190,
+    "text": "OFF"
+  },
+  {
+    "id": 191,
+    "text": "ON"
+  },
+  {
+    "id": 192,
+    "text": "EXIT"
+  },
+  {
+    "id": 193,
+    "text": "Do you want to delete?"
+  },
+  {
+    "id": 194,
+    "text": "*DELETE"
+  },
+  {
+    "id": 195,
+    "text": "READY MENU"
+  },
+  {
+    "id": 196,
+    "text": "SURVIVAL"
+  },
+  {
+    "id": 197,
+    "text": "BOSS"
+  },
+  {
+    "id": 198,
+    "text": "ARENA"
+  },
+  {
+    "id": 199,
+    "text": "RANK"
+  },
+  {
+    "id": 200,
+    "text": "Empty slot."
+  },
+  {
+    "id": 201,
+    "text": "Do you want to access;the warehouse?"
+  },
+  {
+    "id": 202,
+    "text": "Check for new updates."
+  },
+  {
+    "id": 203,
+    "text": "Do you want to exit?"
+  },
+  {
+    "id": 204,
+    "text": "Music"
+  },
+  {
+    "id": 205,
+    "text": "Sound"
+  },
+  {
+    "id": 206,
+    "text": "Game speed"
+  },
+  {
+    "id": 207,
+    "text": "Vibration"
+  },
+  {
+    "id": 208,
+    "text": "Effects"
+  },
+  {
+    "id": 209,
+    "text": "Auto target"
+  },
+  {
+    "id": 210,
+    "text": "Landscape View"
+  },
+  {
+    "id": 211,
+    "text": "Back"
+  },
+  {
+    "id": 212,
+    "text": "Next"
+  },
+  {
+    "id": 213,
+    "text": "Go to Zone"
+  },
+  {
+    "id": 214,
+    "text": "For Gift"
+  },
+  {
+    "id": 215,
+    "text": "&Rare| "
+  },
+  {
+    "id": 216,
+    "text": "}Epic| "
+  },
+  {
+    "id": 217,
+    "text": "`Hero| "
+  },
+  {
+    "id": 218,
+    "text": "^Legend| "
+  },
+  {
+    "id": 219,
+    "text": "<Set| "
+  },
+  {
+    "id": 220,
+    "text": "Weapon"
+  },
+  {
+    "id": 221,
+    "text": "Min. Level:"
+  },
+  {
+    "id": 222,
+    "text": "Equip type:"
+  },
+  {
+    "id": 223,
+    "text": "Easy"
+  },
+  {
+    "id": 224,
+    "text": "Heavy"
+  },
+  {
+    "id": 225,
+    "text": "Attack speed:"
+  },
+  {
+    "id": 226,
+    "text": "Slow"
+  },
+  {
+    "id": 227,
+    "text": "Speed"
+  },
+  {
+    "id": 228,
+    "text": "Attack power"
+  },
+  {
+    "id": 229,
+    "text": "Brain/Attack power"
+  },
+  {
+    "id": 230,
+    "text": "금강/Physical Defense"
+  },
+  {
+    "id": 231,
+    "text": "Girl/Magic Defense"
+  },
+  {
+    "id": 232,
+    "text": "Dead/All accuracy"
+  },
+  {
+    "id": 233,
+    "text": "Zero/Evasion rate"
+  },
+  {
+    "id": 234,
+    "text": "Bondage/Critical"
+  },
+  {
+    "id": 235,
+    "text": "결의/Critical Resistance"
+  },
+  {
+    "id": 236,
+    "text": "Injection/Max HP"
+  },
+  {
+    "id": 237,
+    "text": "Resonance/HP Recovery"
+  },
+  {
+    "id": 238,
+    "text": "Vampire/HP Absorption"
+  },
+  {
+    "id": 239,
+    "text": "Sage/Magic Power"
+  },
+  {
+    "id": 240,
+    "text": "Magic/Magical Resistance"
+  },
+  {
+    "id": 241,
+    "text": "Storm/Cooldown Reduction"
+  },
+  {
+    "id": 242,
+    "text": "Armor"
+  },
+  {
+    "id": 243,
+    "text": "Accessories"
+  },
+  {
+    "id": 244,
+    "text": "SHOP"
+  },
+  {
+    "id": 245,
+    "text": "CASH SHOP"
+  },
+  {
+    "id": 246,
+    "text": "Not available in Expert;mode."
+  },
+  {
+    "id": 247,
+    "text": "The game cannot be saved.;Items cannot be assembled, synthesized or;disassembled."
+  },
+  {
+    "id": 248,
+    "text": "This item is not available."
+  },
+  {
+    "id": 249,
+    "text": "Elemental is;not available."
+  },
+  {
+    "id": 250,
+    "text": "Not enough SP."
+  },
+  {
+    "id": 251,
+    "text": "The girl does not have enough energy to attack."
+  },
+  {
+    "id": 252,
+    "text": "Wait, skill in the waiting process."
+  },
+  {
+    "id": 253,
+    "text": "Need a shield."
+  },
+  {
+    "id": 254,
+    "text": "You can not longer use;the bag capacity."
+  },
+  {
+    "id": 255,
+    "text": "Please, clean your bag."
+  },
+  {
+    "id": 256,
+    "text": "This skill has been;learned."
+  },
+  {
+    "id": 257,
+    "text": "CW"
+  },
+  {
+    "id": 258,
+    "text": "CCW"
+  },
+  {
+    "id": 259,
+    "text": "Only supported on touch phones."
+  },
+  {
+    "id": 260,
+    "text": "Do you want to buy the amulet of resurrection?"
+  },
+  {
+    "id": 261,
+    "text": "get!"
+  },
+  {
+    "id": 262,
+    "text": "x"
+  },
+  {
+    "id": 263,
+    "text": "Synthesize two equipment to create a new one. Only the same type of equipment can be synthesized."
+  },
+  {
+    "id": 264,
+    "text": "Create an item using a combination of ingredients. Use combinations to learn new combinations."
+  },
+  {
+    "id": 265,
+    "text": " Won"
+  },
+  {
+    "id": 266,
+    "text": "Real cash"
+  },
+  {
+    "id": 267,
+    "text": " Won;Mobile data charges may apply."
+  },
+  {
+    "id": 268,
+    "text": "COLLECTION"
+  },
+  {
+    "id": 269,
+    "text": "RARE WEAPON"
+  },
+  {
+    "id": 270,
+    "text": "RARE ARMOR"
+  },
+  {
+    "id": 271,
+    "text": "RARE ACCESSORIES"
+  },
+  {
+    "id": 272,
+    "text": "ADD TO COLLECTION"
+  },
+  {
+    "id": 273,
+    "text": "Items in the collection; if you move the item, it will disappear; Do you want to continue?"
+  },
+  {
+    "id": 274,
+    "text": "map"
+  },
+  {
+    "id": 275,
+    "text": "shop"
+  },
+  {
+    "id": 276,
+    "text": "save"
+  },
+  {
+    "id": 277,
+    "text": "HELM"
+  },
+  {
+    "id": 278,
+    "text": "ARMOR"
+  },
+  {
+    "id": 279,
+    "text": "GLOVE"
+  },
+  {
+    "id": 280,
+    "text": "SHOES"
+  },
+  {
+    "id": 281,
+    "text": "SHIELD"
+  },
+  {
+    "id": 282,
+    "text": "It is an item worn."
+  },
+  {
+    "id": 283,
+    "text": "Total"
+  },
+  {
+    "id": 284,
+    "text": "Collection"
+  },
+  {
+    "id": 285,
+    "text": "You must reach the master level."
+  },
+  {
+    "id": 286,
+    "text": "^(Note: the game is saved;automatically.)"
+  },
+  {
+    "id": 287,
+    "text": "+Random option"
+  },
+  {
+    "id": 288,
+    "text": "Show helmet"
+  },
+  {
+    "id": 289,
+    "text": "You can learn skills right away.;Do you want to use skill book?"
+  },
+  {
+    "id": 290,
+    "text": "Please, try to clean the bag."
+  },
+  {
+    "id": 291,
+    "text": "HPMAX"
+  },
+  {
+    "id": 292,
+    "text": "SPMAX"
+  },
+  {
+    "id": 293,
+    "text": "Will you use the amulet of resurrection?"
+  },
+  {
+    "id": 294,
+    "text": "Socket initialization"
+  },
+  {
+    "id": 295,
+    "text": "Socket extension"
+  },
+  {
+    "id": 296,
+    "text": "Restored Successfully"
+  },
+  {
+    "id": 297,
+    "text": "Available only in the city."
+  },
+  {
+    "id": 298,
+    "text": "The (a) was used."
+  },
+  {
+    "id": 299,
+    "text": " MODE"
+  },
+  {
+    "id": 300,
+    "text": "This item cannot be dismantled."
+  },
+  {
+    "id": 301,
+    "text": "The same class cannot be transferred."
+  },
+  {
+    "id": 302,
+    "text": "You have exceeded your limit."
+  },
+  {
+    "id": 303,
+    "text": "You have already secured your maximum bag."
+  },
+  {
+    "id": 304,
+    "text": "^Purchasing items may take some time, wait for the;process to complete."
+  },
+  {
+    "id": 305,
+    "text": "The indicator in the upper left corner of the screen. Len uses 1 measure of energy, energy is charged;during the attack."
+  },
+  {
+    "id": 306,
+    "text": "You can learn new skills."
+  },
+  {
+    "id": 307,
+    "text": "Use the skills book or go to the skills master!"
+  },
+  {
+    "id": 308,
+    "text": "Please, use after saving."
+  },
+  {
+    "id": 309,
+    "text": "Name"
+  },
+  {
+    "id": 310,
+    "text": "Heroes Lore 5:;Black Contract"
+  },
+  {
+    "id": 311,
+    "text": "Age limit"
+  },
+  {
+    "id": 312,
+    "text": "For 12+"
+  },
+  {
+    "id": 313,
+    "text": "Released"
+  },
+  {
+    "id": 314,
+    "text": "January 21, 2011"
+  },
+  {
+    "id": 315,
+    "text": "Production"
+  },
+  {
+    "id": 316,
+    "text": "Electronic Arts;(Korea)"
+  },
+  {
+    "id": 317,
+    "text": "Ser number"
+  },
+  {
+    "id": 318,
+    "text": "CC-NM-110121-001"
+  },
+  {
+    "id": 319,
+    "text": "Report;number"
+  },
+  {
+    "id": 320,
+    "text": "1999-000001"
+  },
+  {
+    "id": 321,
+    "text": "MAX"
+  },
+  {
+    "id": 322,
+    "text": "MIN"
+  },
+  {
+    "id": 323,
+    "text": "LOW"
+  },
+  {
+    "id": 324,
+    "text": "Airplane mode is on. Please turn off airplane mode to use this."
+  },
+  {
+    "id": 325,
+    "text": "Wi-Fi lock is on. Please use this after unlocking."
+  },
+  {
+    "id": 326,
+    "text": "You are in roaming. Please note that data roaming charges will be applied separately, and existing tariff plans do not apply."
+  },
+  {
+    "id": 327,
+    "text": "The service is not available, as this is an international roaming zone."
+  },
+  {
+    "id": 328,
+    "text": "(Free call)"
+  },
+  {
+    "id": 329,
+    "text": "(Paid call)"
+  },
+  {
+    "id": 330,
+    "text": "(Free for information/call)"
+  },
+  {
+    "id": 331,
+    "text": "Cash stores are not available in this area."
+  },
+  {
+    "id": 332,
+    "text": " Won;Additional information, a fee (call cost) will be charged."
+  },
+  {
+    "id": 333,
+    "text": "Enjoy the complete version;Real cash"
+  },
+  {
+    "id": 334,
+    "text": "^정식 전환 중 일부 시간이;소요될 수 있으므로;강제 종료하지 마세요."
+  },
+  {
+    "id": 335,
+    "text": "Registration of the full version is completed."
+  },
+  {
+    "id": 336,
+    "text": "Not available in trial version."
+  },
+  {
+    "id": 337,
+    "text": "Canceled."
+  },
+  {
+    "id": 338,
+    "text": "You have completed registration."
+  },
+  {
+    "id": 339,
+    "text": "Not supported in the current version."
+  },
+  {
+    "id": 340,
+    "text": "Data transfer is not possible because data blocking is enabled when roaming."
+  },
+  {
+    "id": 341,
+    "text": "Touch pad"
+  },
+  {
+    "id": 342,
+    "text": "A"
+  },
+  {
+    "id": 343,
+    "text": "B"
+  },
+  {
+    "id": 344,
+    "text": "This service charges a fee for information regardless of the subscription plan."
+  },
+  {
+    "id": 345,
+    "text": "^The cost of a call depends on the tariff plan and changes accordingly."
+  },
+  {
+    "id": 346,
+    "text": "Do you agree?"
+  },
+  {
+    "id": 347,
+    "text": "1.Agree"
+  },
+  {
+    "id": 348,
+    "text": "2.Disagree"
+  },
+  {
+    "id": 349,
+    "text": "3.Accept (stop viewing this window)"
+  },
+  {
+    "id": 350,
+    "text": "Successfully resurrected.;;&Confirm"
+  }
+]

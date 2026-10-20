@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Heroes Lore 5: Covenant of Darkness
+GenericName=Action RPG
+Comment=Port Nativo C++17 + SDL2 por David Kalil Braga (2026)
+Exec=heroes_lore_5
+Icon=heroes_lore_5
+Terminal=false
+Categories=Game;RolePlaying;
+Keywords=heroes;lore;5;ea;rpg;android;recomp;
+StartupWMClass=heroes_lore_5
