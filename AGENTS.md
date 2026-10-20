@@ -6,8 +6,8 @@ This document is the authoritative engineering guide for **Heroes Lore 5: Covena
 
 ## Current integration — 2026-10-20
 
-The user has manually accepted the isolated Windows build as fluid, fast, and
-audible. Its runtime changes are now integrated into `src/`; the main project is
+The user has manually accepted the Windows, Android and Switch runtime as fluid,
+fast, and audible. Its runtime changes are now integrated into `src/`; the main project is
 the authoritative source. `codex_lab/` remains a local ignored experiment and
 backup, not a CI/release source. Read `docs/HANDOFF.md` and `docs/RUNTIME.md` before
 changing the CPU, clocks, audio, build rules, or VFS hooks.
@@ -50,7 +50,7 @@ changing the CPU, clocks, audio, build rules, or VFS hooks.
   - In-Game cutscene and scenario engine (`00000.scn`, Map 36 tiles, objects, animations) fully loaded and rendering in 4,685 unique colors.
   - **Full English Translation:** 100% of Menus (`menu_text.dat`), In-game strings (`ingame_text.dat`), Quests/Achievements (`mission_text.dat`), Help Manuals (`help_android_*.dat`), and All Story Dialogue Scenarios (`c/map/*.scn` and `c/ep/ep_*/*.scn`, 258 files total) translated and compiled into `assets_override/`.
   - **Gamepad Support:** Plug-and-play SDL2 GameController auto-detection (Xbox, PlayStation, Nintendo Switch) with analog stick and button mappings.
-  - **Aspect Ratio & Window Controls:** Resizable window with Letterbox preservation (F9) and Fullscreen toggle (F11 / Alt+Enter).
+  - **Aspect Ratio & Window Controls:** Real Native / Wide / Auto viewport expansion (F9, Select+Start, touch button) and Fullscreen toggle (F11 / Alt+Enter).
   - Complete standalone distribution packaged in `dist/` with zero external dependencies (pure Windows native).
 
 ---
@@ -147,19 +147,22 @@ The Help menu (`c/csv2/help_android_skt.dat`, `help_ktf.dat`, etc.) contains 21 
 
 ## 6. Aspect Ratio & Widescreen Architecture
 
-### Current Implementation:
-- **Logical Canvas:** 240x400 (3:5 portrait).
-- **Aspect Ratio Toggle (F9):**
-  - **Mode 1 (Letterbox):** Uses `SDL_RenderSetLogicalSize(ren, W, H)` to preserve the crisp 3:5 aspect ratio with clean borders on widescreen displays.
-  - **Mode 2 (Stretched / Fill):** Disables logical letterboxing to stretch the viewport to fill the window.
-- **Fullscreen (F11 / Alt+Enter):** Toggles borderless desktop fullscreen.
-
-### True Widescreen Roadmap (Milestone 2):
-In the original mobile engine, viewport clipping and tile rendering are governed by:
-- `nativeInitDisplay(w, h)` at `0x0009987c`
-- `glOrthof(0, width, 0, height)` in the compositor
-- `Camera::Camera` and `Graphic::Graphic` map bounds
-- **Next Step:** Expose dynamic viewport width (e.g. 480x270 or 320x240) to `nativeInitDisplay`, expanding horizontal tile culling and revealing more of the environment rather than letterboxing or stretching.
+### Current implementation
+- `src/display_layout.*` owns Native (240x400), Wide (712x400, approximately
+  16:9), and Auto (actual window/orientation) policy, saved in `data/display.ini`.
+- F9, Back/Select+Start (Switch −/+), or the top-right touch/mouse button cycles
+  modes. Back and Start alone dispatch on release so the chord sends no game action.
+- SDL presentation always uses uniform scaling. There is no stretch mode.
+- `Game::resizeViewport` calls the original `nativeInitDisplay`, replaces both
+  framebuffer pixel allocations while preserving handles, and refreshes Graphic
+  context, map culling/cache/camera, and live dialog geometry. Read
+  `docs/DISPLAY.md` before changing the guest structure fields or CPU paint hooks.
+- F11 / Alt+Enter toggles desktop fullscreen. Auto debounces window resizes.
+- Run CTest, `tools/verify_aspect.py`, and the runtime verifier after changes.
+  The aspect test verifies actual scenery expansion, identical tile pixels,
+  live dialog/orientation changes, 60 repeated resizes, and nonzero audio.
+- The user validated the preceding audio/performance integration on Android and
+  Switch; the new aspect modes still require device gameplay tests.
 
 ---
 

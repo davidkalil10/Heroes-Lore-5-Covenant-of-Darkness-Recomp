@@ -23,6 +23,7 @@ struct Game {
 
     // apkDir: extracted APK (needs lib/armeabi/libHeroesLore5.so, assets/data.vfs.mp3)
     bool boot(const std::string& apkDir, const std::string& dataDir, int lcdW, int lcdH);
+    bool resizeViewport(int width, int height);
     void frame();                                   // one nativeLoop()
     void key(int type, int wipiKey);                // type: 2=press 3=release
     void touch(int type, int x, int y, int id);     // type: 19=press 20=release 21=move

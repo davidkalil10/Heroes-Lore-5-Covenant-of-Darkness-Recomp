@@ -1,5 +1,6 @@
 // HL5 recomp - Windows host entry point (SDL2). Milestone 0 bootstrap: ARM interpreter + HLE.
 #include "hle/hle.h"
+#include "display_layout.h"
 #include <SDL.h>
 #include "audio/audio.h"
 #include <algorithm>
@@ -322,6 +323,11 @@ int main(int argc, char** argv) {
 #endif
     int frames = -1, dumpEvery = 0, lw = 240, lh = 400;
     bool headless = false, verbose = false;
+    int availableW=0,availableH=0;
+    AspectMode requestedMode=AspectMode::Native;
+    bool hasModeOverride=false;
+    std::map<int,AspectMode> scriptModes;
+    std::map<int,std::pair<int,int>> scriptWindows;
     std::map<int, int> scriptKeys;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
@@ -331,6 +337,20 @@ int main(int argc, char** argv) {
         else if (a == "--dump" && i + 1 < argc) dumpDir = argv[++i];
         else if (a == "--dump-every" && i + 1 < argc) dumpEvery = atoi(argv[++i]);
         else if (a == "--lcd" && i + 1 < argc) sscanf(argv[++i], "%dx%d", &lw, &lh);
+        else if(a=="--aspect" && i+1<argc) {
+            hasModeOverride=true;
+            if(!parseAspectMode(argv[++i],requestedMode)) { LOGE("Invalid --aspect (native|wide|auto)\n");return 2; }
+        } else if(a=="--aspect-at" && i+1<argc) {
+            int frame=0;char mode[16]={};AspectMode parsed;
+            if(sscanf(argv[++i],"%d:%15s",&frame,mode)!=2 || frame<0 || !parseAspectMode(mode,parsed)) return 2;
+            scriptModes[frame]=parsed;
+        } else if(a=="--window" && i+1<argc) {
+            if(sscanf(argv[++i],"%dx%d",&availableW,&availableH)!=2 || availableW<1 || availableH<1) return 2;
+        } else if(a=="--window-at" && i+1<argc) {
+            int frame=0,w=0,h=0;
+            if(sscanf(argv[++i],"%d:%dx%d",&frame,&w,&h)!=3 || frame<0 || w<1 || h<1) return 2;
+            scriptWindows[frame]={w,h};
+        }
         else if (a == "--headless") headless = true;
         else if (a == "--verbose") verbose = true;
         else if (a == "--press-at" && i + 1 < argc) {
@@ -342,24 +362,53 @@ int main(int argc, char** argv) {
         std::filesystem::create_directories(dumpDir);
         dumpDir = std::filesystem::absolute(dumpDir).generic_string();
     }
+    if(lw<1 || lh<1 || lw>1280 || lh>1280) { LOGE("Invalid native canvas size\n");return 2; }
+    const std::string displaySettings=data+"/display.ini";
+    AspectMode aspectMode=hasModeOverride?requestedMode:loadAspectMode(displaySettings);
+    SDL_Window* win=nullptr;SDL_Renderer* ren=nullptr;SDL_Texture* tex=nullptr;
     auto bootStart = std::chrono::steady_clock::now();
+    SDL_SetHint("SDL_TOUCH_MOUSE_EVENTS","0");
+    SDL_SetHint("SDL_MOUSE_TOUCH_EVENTS","0");
     if (!headless || getenv("HL5_AUDIO_TEST")) Audio::init();
+    if(!headless) {
+        if(SDL_InitSubSystem(SDL_INIT_VIDEO|SDL_INIT_EVENTS|SDL_INIT_GAMECONTROLLER)!=0) {
+            LOGE("[SDL] Video init failed: %s\n",SDL_GetError());Audio::shutdown();return 1;
+        }
+#ifdef __SWITCH__
+        win=SDL_CreateWindow("Heroes Lore 5: Covenant of Darkness",0,0,1280,720,0);
+#elif defined(__ANDROID__)
+        win=SDL_CreateWindow("Heroes Lore 5: Covenant of Darkness",0,0,0,0,SDL_WINDOW_FULLSCREEN);
+#else
+        int windowW=availableW>0?availableW:(aspectMode==AspectMode::Native?lw*2:960);
+        int windowH=availableH>0?availableH:(aspectMode==AspectMode::Native?lh*2:540);
+        win=SDL_CreateWindow("Heroes Lore 5: Covenant of Darkness",SDL_WINDOWPOS_CENTERED,SDL_WINDOWPOS_CENTERED,
+                             windowW,windowH,SDL_WINDOW_RESIZABLE);
+#endif
+        if(!win) { LOGE("[SDL] Window creation failed: %s\n",SDL_GetError());Audio::shutdown();SDL_Quit();return 1; }
+        SDL_GetWindowSize(win,&availableW,&availableH);
+    }
+    if(availableW<1 || availableH<1) {availableW=1280;availableH=720;}
+    const auto initialViewport=viewportForAspect(aspectMode,availableW,availableH,lw,lh);
+    LOGI("[video] mode=%s available=%dx%d viewport=%dx%d\n",aspectModeName(aspectMode),availableW,availableH,initialViewport.width,initialViewport.height);
     static Game game;
     game.verbose = verbose;
     LOGI("[Init] Calling Game::boot(apk=%s, data=%s)...\n", apk.c_str(), data.c_str());
-    if (!game.boot(apk, data, lw, lh)) {
+    if (!game.boot(apk, data, initialViewport.width, initialViewport.height)) {
         LOGE("[Init] Game::boot failed!\n");
         return 1;
     }
     LOGI("[Init] Game::boot OK, screen size: %dx%d\n", game.screen.w, game.screen.h);
 
     LOGI("[bench] boot_ms=%.3f\n", std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now()-bootStart).count());
-    SDL_Window* win = nullptr; SDL_Renderer* ren = nullptr; SDL_Texture* tex = nullptr;
+
     std::vector<SDL_GameController*> controllers;
     DirectionManager dirMgr;
     bool isFullscreen = false;
     bool rendererVsync = false;
-    bool aspectFit = true; // true: 3:5 letterboxed, false: stretched fill
+    AspectChord aspectChord;
+    bool viewportDirty=false,modePointerHeld=false,gamePointerHeld=false;
+    int touchX=0,touchY=0;
+    Uint32 resizeSince=0;
 
     auto openController = [&](int id) {
         if (SDL_IsGameController(id)) {
@@ -375,7 +424,7 @@ int main(int argc, char** argv) {
 
     auto computeDstRect = [&](int winW, int winH) -> SDL_Rect {
         SDL_Rect r = { 0, 0, winW, winH };
-        if (aspectFit && W > 0 && H > 0) {
+        if (W > 0 && H > 0) {
             float scale = std::min((float)winW / W, (float)winH / H);
             r.w = (int)(W * scale);
             r.h = (int)(H * scale);
@@ -385,9 +434,34 @@ int main(int argc, char** argv) {
         return r;
     };
 
+    auto selectMode=[&](AspectMode mode,bool persist) {
+        aspectMode=mode;viewportDirty=true;resizeSince=0;
+        LOGI("[video] mode=%s\n",aspectModeName(mode));
+        if(win) {
+#if !defined(__SWITCH__) && !defined(__ANDROID__)
+            int ww=0,wh=0;SDL_GetWindowSize(win,&ww,&wh);
+            if(mode==AspectMode::Wide && !isFullscreen && ww<wh) SDL_SetWindowSize(win,960,540);
+#endif
+            std::string title=std::string("Heroes Lore 5 - ")+aspectModeName(mode);
+            SDL_SetWindowTitle(win,title.c_str());
+        }
+        if(persist && !saveAspectMode(displaySettings,mode)) LOGE("[video] Could not save display preference\n");
+    };
+    auto recreateTexture=[&]() {
+        if(tex) {SDL_DestroyTexture(tex);tex=nullptr;}
+        tex=SDL_CreateTexture(ren,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STREAMING,W,H);
+        if(!tex) tex=SDL_CreateTexture(ren,SDL_PIXELFORMAT_ABGR8888,SDL_TEXTUREACCESS_STREAMING,W,H);
+        if(!tex) LOGE("[SDL] Texture creation failed: %s\n",SDL_GetError());
+        return tex!=nullptr;
+    };
+
     auto handlePointer = [&](int eventType, int mx, int my) {
         int winW = 0, winH = 0;
         SDL_GetWindowSize(win, &winW, &winH);
+        if(eventType==EV_PTR_PRESS && insideRect(mx,my,aspectButtonRect(winW,winH))) {
+            modePointerHeld=true;selectMode(nextAspectMode(aspectMode),true);return;
+        }
+        if(modePointerHeld) {if(eventType==EV_PTR_RELEASE) modePointerHeld=false;return;}
         SDL_Rect dst = computeDstRect(winW, winH);
         if (dst.w <= 0 || dst.h <= 0) return;
 
@@ -395,10 +469,14 @@ int main(int argc, char** argv) {
         float ly = (float)(my - dst.y) * H / (float)dst.h;
 
         if (lx >= 0 && lx < W && ly >= 0 && ly < H) {
-            game.touch(eventType, (int)lx, (int)ly, 0);
+            touchX=(int)lx;touchY=(int)ly;
+            if(eventType==EV_PTR_PRESS) gamePointerHeld=true;
+            if(eventType==EV_PTR_RELEASE) gamePointerHeld=false;
+            game.touch(eventType, touchX, touchY, 0);
         } else if (eventType == EV_PTR_RELEASE) {
             int clx = std::clamp((int)lx, 0, W - 1);
             int cly = std::clamp((int)ly, 0, H - 1);
+            gamePointerHeld=false;
             game.touch(EV_PTR_RELEASE, clx, cly, 0);
         } else if (eventType == EV_PTR_MOVE) {
             int clx = std::clamp((int)lx, 0, W - 1);
@@ -408,23 +486,6 @@ int main(int argc, char** argv) {
     };
 
     if (!headless) {
-#ifdef __SWITCH__
-        SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER);
-        win = SDL_CreateWindow("Heroes Lore 5: Covenant of Darkness", 0, 0, 1280, 720, 0);
-        if (!win) {
-            win = SDL_CreateWindow("Heroes Lore 5: Covenant of Darkness", 0, 0, 1280, 720, SDL_WINDOW_FULLSCREEN);
-        }
-#elif defined(__ANDROID__)
-        SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
-        win = SDL_CreateWindow("Heroes Lore 5: Covenant of Darkness", 0, 0, 0, 0, SDL_WINDOW_FULLSCREEN);
-#else
-        SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER);
-        win = SDL_CreateWindow("Heroes Lore 5: Covenant of Darkness", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, W * 2, H * 2, SDL_WINDOW_RESIZABLE);
-#endif
-        if (!win) {
-            LOGE("[SDL] SDL_CreateWindow failed: %s\n", SDL_GetError());
-            return 1;
-        }
         int curWinW = 0, curWinH = 0;
         SDL_GetWindowSize(win, &curWinW, &curWinH);
         LOGI("[SDL] Window created (%dx%d)\n", curWinW, curWinH);
@@ -440,15 +501,7 @@ int main(int argc, char** argv) {
         SDL_RendererInfo rendererInfo{};
         if(SDL_GetRendererInfo(ren,&rendererInfo)==0) rendererVsync=(rendererInfo.flags & SDL_RENDERER_PRESENTVSYNC)!=0;
         LOGI("[SDL] Renderer created successfully (vsync=%d)\n",rendererVsync);
-        tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, W, H);
-        if (!tex) {
-            LOGE("[SDL] SDL_CreateTexture ARGB8888 failed: %s, trying ABGR8888...\n", SDL_GetError());
-            tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, W, H);
-        }
-        if (!tex) {
-            LOGE("[SDL] SDL_CreateTexture failed completely: %s\n", SDL_GetError());
-            return 1;
-        }
+        if(!recreateTexture()) {Audio::shutdown();SDL_Quit();return 1;}
         LOGI("[SDL] Texture created (%dx%d)\n", W, H);
 
         for (int i = 0; i < SDL_NumJoysticks(); i++) openController(i);
@@ -467,9 +520,16 @@ int main(int argc, char** argv) {
             while (SDL_PollEvent(&e)) {
                 if (e.type == SDL_QUIT) {
                     game.quit = true;
+                } else if(e.type==SDL_WINDOWEVENT) {
+                    if(e.window.event==SDL_WINDOWEVENT_SIZE_CHANGED || e.window.event==SDL_WINDOWEVENT_RESIZED) {
+                        if(aspectMode==AspectMode::Auto) {viewportDirty=true;resizeSince=SDL_GetTicks();}
+                    } else if(e.window.event==SDL_WINDOWEVENT_FOCUS_LOST) {
+                        aspectChord.reset();modePointerHeld=false;
+                    }
                 } else if (e.type == SDL_CONTROLLERDEVICEADDED) {
                     openController(e.cdevice.which);
                 } else if (e.type == SDL_CONTROLLERDEVICEREMOVED) {
+                    aspectChord.reset();
                     SDL_JoystickID jid = e.cdevice.which;
                     for (auto it = controllers.begin(); it != controllers.end(); ) {
                         SDL_Joystick* j = SDL_GameControllerGetJoystick(*it);
@@ -482,12 +542,23 @@ int main(int argc, char** argv) {
                         }
                     }
                 } else if (e.type == SDL_CONTROLLERBUTTONDOWN) {
+                    auto chord=aspectChord.button(e.cbutton.button,true);
+                    if(chord!=AspectChord::NotHandled) {
+                        if(chord==AspectChord::Cycle) selectMode(nextAspectMode(aspectMode),true);
+                        continue;
+                    }
                     int k = mapControllerButton(e.cbutton.button);
                     if (k) {
                         if (DirectionManager::keyToDirIdx(k) >= 0) dirMgr.onButton(k, true);
                         else game.key(EV_KEY_PRESS, k);
                     }
                 } else if (e.type == SDL_CONTROLLERBUTTONUP) {
+                    auto chord=aspectChord.button(e.cbutton.button,false);
+                    if(chord!=AspectChord::NotHandled) {
+                        if(chord==AspectChord::Map) game.key(EV_KEY_PRESS,'0');
+                        else if(chord==AspectChord::Menu) game.key(EV_KEY_PRESS,WK_CLEAR);
+                        continue;
+                    }
                     int k = mapControllerButton(e.cbutton.button);
                     if (k) {
                         if (DirectionManager::keyToDirIdx(k) >= 0) dirMgr.onButton(k, false);
@@ -500,9 +571,9 @@ int main(int argc, char** argv) {
                     if (e.key.keysym.sym == SDLK_F11 || (e.key.keysym.sym == SDLK_RETURN && (e.key.keysym.mod & KMOD_ALT))) {
                         isFullscreen = !isFullscreen;
                         SDL_SetWindowFullscreen(win, isFullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+                        if(aspectMode==AspectMode::Auto) {viewportDirty=true;resizeSince=0;}
                     } else if (e.key.keysym.sym == SDLK_F9) {
-                        aspectFit = !aspectFit;
-                        fprintf(stderr, "[video] Aspect: %s\n", aspectFit ? "Original 3:5 Letterbox" : "Fill / Stretched");
+                        if(!e.key.repeat) selectMode(nextAspectMode(aspectMode),true);
                     } else {
                         int k = mapKey(e.key.keysym.sym);
                         if (k) {
@@ -534,6 +605,24 @@ int main(int argc, char** argv) {
             }
             dirMgr.update(game);
         }
+        if(scriptModes.count(f)) selectMode(scriptModes[f],false);
+        if(scriptWindows.count(f)) {
+            availableW=scriptWindows[f].first;availableH=scriptWindows[f].second;
+            if(win) SDL_SetWindowSize(win,availableW,availableH);
+            if(aspectMode==AspectMode::Auto) {viewportDirty=true;resizeSince=0;}
+        }
+        if(viewportDirty && (!resizeSince || SDL_GetTicks()-resizeSince>=120)) {
+            if(win) SDL_GetWindowSize(win,&availableW,&availableH);
+            auto target=viewportForAspect(aspectMode,availableW,availableH,lw,lh);
+            if(target.width!=W || target.height!=H) {
+                if(gamePointerHeld) {game.touch(EV_PTR_RELEASE,touchX,touchY,0);gamePointerHeld=false;}
+                if(!game.resizeViewport(target.width,target.height)) {LOGE("[video] Viewport resize failed\n");game.quit=true;}
+                W=game.screen.w;H=game.screen.h;
+                if(ren && !recreateTexture()) game.quit=true;
+                LOGI("[video] viewport=%dx%d\n",W,H);
+            }
+            viewportDirty=false;
+        }
         if (scriptKeys.count(f)) {
             int k = scriptKeys[f];
             fprintf(stderr, "[script] Injecting key press %d at frame %d\n", k, f);
@@ -560,6 +649,7 @@ int main(int argc, char** argv) {
             SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
             SDL_RenderClear(ren);
             SDL_RenderCopy(ren, tex, nullptr, &dst);
+            drawAspectButton(ren,aspectMode,winW,winH);
             SDL_RenderPresent(ren);
         }
         if (!headless && !rendererVsync) {

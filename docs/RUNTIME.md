@@ -3,7 +3,8 @@
 ## Accepted baseline
 
 On 2026-10-20 the user tested the isolated Windows package and confirmed fluid,
-fast execution and working sound. The accepted changes now live in the main
+fast execution and working sound, then confirmed the same success on Android
+and Switch. The accepted changes now live in the main
 source tree. Builds consume `src/`; `codex_lab/` is ignored and never used by CI.
 
 The engine still interprets most ARM32 code. This is not a full native rewrite
@@ -99,8 +100,9 @@ audio, profiler, or differential verifier. Values are medians across repetitions
 
 Mean speedup: 3.13x. Raw measurements: `docs/performance_baseline.json`.
 These are loop processing measurements, not guaranteed displayed FPS. Loading
-spikes remain. The user subsequently confirmed good PC gameplay; Android and
-Switch performance remains pending device testing of this integration.
+spikes remain. The user subsequently confirmed good gameplay and audio on PC,
+Android and Switch. This confirmation predates the new aspect modes described
+in `docs/DISPLAY.md`; those require their own device testing.
 
 ## Diagnostic switches
 

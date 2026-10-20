@@ -66,3 +66,6 @@ scratch/
 /frame_times.csv
 /scratch_dump/
 /scratch_new/
+
+# User display preference
+/data/display.ini

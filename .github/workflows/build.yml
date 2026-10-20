@@ -91,14 +91,19 @@ jobs:
 
       - name: Verify Windows Runtime and Audio
         shell: msys2 {0}
-        run: python tools/verify_runtime.py --exe build/hl5.exe
+        run: |
+          ctest --test-dir build --output-on-failure
+          python tools/verify_runtime.py --exe build/hl5.exe
+          python tools/verify_aspect.py --exe build/hl5.exe
 
       - name: Upload Windows Runtime Diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: heroes_lore_5_windows_validation
-          path: build/runtime-verification/
+          path: |
+            build/runtime-verification/
+            build/aspect-verification/
 
       - name: Package Windows Portable Release
         shell: msys2 {0}
@@ -165,14 +170,19 @@ jobs:
           cmake --build build
 
       - name: Verify Linux Runtime and Audio
-        run: python3 tools/verify_runtime.py --exe build/hl5
+        run: |
+          ctest --test-dir build --output-on-failure
+          python3 tools/verify_runtime.py --exe build/hl5
+          python3 tools/verify_aspect.py --exe build/hl5
 
       - name: Upload Linux Runtime Diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: heroes_lore_5_linux_validation
-          path: build/runtime-verification/
+          path: |
+            build/runtime-verification/
+            build/aspect-verification/
 
       - name: Prepare AppDir
         run: |

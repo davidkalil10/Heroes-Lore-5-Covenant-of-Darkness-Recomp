@@ -840,6 +840,93 @@ bool Game::boot(const std::string& apkDir, const std::string& dataDir, int lcdW,
     return true;
 }
 
+static bool g_viewportRepaint=false;
+static unsigned g_viewportGeneration=0;
+static u32 g_lastPaintedMap=0;
+static int g_previousViewportW=240,g_previousViewportH=400;
+
+void refreshViewportDialog(Cpu& cpu) {
+    if(!g_viewportGeneration) return;
+    u32 event=cpu.r[0];
+    int index=(int8_t)gm::r8(event+0xac);
+    if(index<0 || index>3) return;
+    u32 record=event+(u32)index*60;
+    int boxHeight=gm::r16(record+0xca);
+    if(boxHeight<10 || boxHeight>G->screen.h/2) return;
+    if(gm::r16(record+0xc8)==G->screen.w && gm::r16(record+0xc6)+boxHeight==G->screen.h) return;
+    // Reflow the existing message; keep its text, typing progress and script state.
+    gm::w16(record+0xc4,0);gm::w16(record+0xc6,G->screen.h-boxHeight);
+    gm::w16(record+0xc8,G->screen.w);
+    gm::w16(record+0xbe,8);gm::w16(record+0xc0,G->screen.h-boxHeight+6);
+    gm::w16(record+0xc2,G->screen.w-16);
+}
+
+void refreshViewportMap(Cpu& cpu) {
+    u32 map=cpu.r[0];
+    bool sameMap=g_lastPaintedMap==map;
+    g_lastPaintedMap=map;
+    if(!g_viewportRepaint) return;
+    g_viewportRepaint=false;
+    if(!sameMap) return; // A newly loaded map already used the new canvas size.
+    s32 centerX=(s32)gm::r32(map+0xc0)+g_previousViewportW/2;
+    s32 centerY=(s32)gm::r32(map+0xc4)+g_previousViewportH/2;
+    u16 speedX=gm::r16(map+0xb8),speedY=gm::r16(map+0xba);
+    u8 scroll=gm::r8(map+0xbc);
+    cpu.call(sym("_ZN3Map6MapSetEii"),{map,(u32)centerX,(u32)centerY});
+    gm::w16(map+0xb8,speedX);gm::w16(map+0xba,speedY);gm::w8(map+0xbc,scroll);
+    fprintf(stderr,"[viewport] map cache repainted\n");
+}
+
+bool Game::resizeViewport(int width, int height) {
+    if(width<1 || width>1280 || height<1 || height>1280) return false;
+    if(screen.w==width && screen.h==height) return true;
+    // These structure fields and paint hooks are verified for the shipped ARM binary.
+    if(sym("_ZN3Map5PaintEv")!=0x1b129c || gm::r32(0x1b129c)!=0xe92d4010 ||
+       sym("_ZN9EventProc18Event_DialogWindowEa")!=0x16afd0) return false;
+    u32 manager=cpu.call(sym("_ZN18MIDASKernelManager11getInstanceEv"),{});
+    u32 oldBuffer=gm::r32(manager+0x4f0),oldPitch=gm::r32(manager+0x504);
+    u32 bytesPerPixel=gm::r32(manager+0x4f4)/8;
+    if(bytesPerPixel!=2 && bytesPerPixel!=4) return false;
+    u32 graphic=gm::r32(sym("_lcdG"));
+    u32 offscreen=graphic?gm::r32(graphic+8):0;
+    if(graphic && gm::r32(graphic+4)!=manager+0x4e0) return false;
+    if(offscreen && gm::r32(offscreen+0xc)/8!=bytesPerPixel) return false;
+    int oldW=screen.w,oldH=screen.h;
+    auto previousPixels=screen.px;
+    if(!g_viewportRepaint) {g_previousViewportW=oldW;g_previousViewportH=oldH;}
+    g_viewportRepaint=g_lastPaintedMap!=0;
+    ++g_viewportGeneration;
+    LOGI("[viewport] resize %dx%d -> %dx%d\n",oldW,oldH,width,height);
+    if(offscreen && offscreen!=manager+0x4e0) {
+        u32 oldData=gm::r32(offscreen+0x10);
+        u32 size=(u32)width*height*bytesPerPixel;
+        u32 newData=cpu.call(sym("MC_knlAlloc"),{size});
+        memset(gm::ptr(newData,size),0,size);
+        // Keep the framebuffer handle stable: other engine objects retain it.
+        gm::w32(offscreen,width);gm::w32(offscreen+4,height);
+        gm::w32(offscreen+8,width*bytesPerPixel);gm::w32(offscreen+0x10,newData);
+        if(oldData && oldData!=oldBuffer) cpu.call(sym("MC_knlFree"),{oldData});
+    }
+    cpu.call(sym("_ZN18MIDASKernelManager14deleteTexturesEv"),{manager});
+    float mag=1.0f;u32 magBits;memcpy(&magBits,&mag,4);
+    cpu.callv(sym("Java_co_kr_eamobile_CletEntry_nativeInitDisplay"),
+        {g_env,g_thiz,(u32)width,(u32)height,5,6,5,0,(u32)width,(u32)height,0,0,0,magBits,0,0,0,0});
+    if(graphic) cpu.call(sym("_ZN7Graphic15ChangeFrameBuffEi"),{graphic,gm::r32(graphic)});
+    // Retain the previous image until the engine's next timed repaint, rather
+    // than showing an all-black frame when nativeLoop skips its logic tick.
+    u32 newBuffer=gm::r32(manager+0x4f0),newPitch=gm::r32(manager+0x504);
+    int copyW=std::min(oldW,width),copyH=std::min(oldH,height);
+    int srcX=(oldW-copyW)/2,srcY=(oldH-copyH)/2;
+    int dstX=(width-copyW)/2,dstY=(height-copyH)/2;
+    for(int y=0;y<copyH;y++) {
+        memcpy(gm::ptr(newBuffer+(dstY+y)*newPitch+dstX*bytesPerPixel,copyW*bytesPerPixel),
+               gm::ptr(oldBuffer+(srcY+y)*oldPitch+srcX*bytesPerPixel,copyW*bytesPerPixel),copyW*bytesPerPixel);
+        std::copy_n(previousPixels.data()+(srcY+y)*oldW+srcX,copyW,screen.px.data()+(dstY+y)*width+dstX);
+    }
+    if(oldBuffer && oldBuffer!=newBuffer) cpu.call(sym("MC_knlFree"),{oldBuffer});
+    return screen.w==width && screen.h==height;
+}
+
 void Game::frame() {
     static auto lastTime = std::chrono::steady_clock::now();
     static double remainderMs = 0;

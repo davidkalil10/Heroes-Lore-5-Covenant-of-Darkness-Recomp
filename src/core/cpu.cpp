@@ -1,6 +1,8 @@
 #include "cpu.h"
 #include "trans.h"
 extern std::string g_overrideDir;
+extern void refreshViewportMap(Cpu& cpu);
+extern void refreshViewportDialog(Cpu& cpu);
 extern bool fastVfsLookup(u32 manager,u32 name,u32 outOffset,u32& size);
 // Tinted/alpha-mixed RGB565 sprite pixel used by the engine's palettized sprite blitters (0x59664 / 0x59d68).
 // lutBase = guest address of the colour-adjust table, tint = (level << 5), a = {aR, aG, aB}.
@@ -29,7 +31,7 @@ static inline bool isHook(u32 pc) {
     if (g_hookMap.empty()) {
         g_hookMap.assign(0x400000, 0);
         static const u32 pcs[] = {0x1417a4, 0x11b348, 0x11feac, 0x11febc, 0x4e03c, 0x4d9f0, 0xc3bbc, 0xc42a0,
-                                  0x14c7e4, 0x418dc, 0x41878, 0x41818, 0x41d78, 0x41940, 0x144db8, 0x145754, 0x59664, 0x59d68, 0x4e7e4, 0x5371c, 0x538c8};
+                                  0x6afd0, 0xb129c, 0x14c7e4, 0x418dc, 0x41878, 0x41818, 0x41d78, 0x41940, 0x144db8, 0x145754, 0x59664, 0x59d68, 0x4e7e4, 0x5371c, 0x538c8};
         for (u32 p : pcs) g_hookMap[p >> 2] = 1;
     }
     u32 o = pc - 0x00100000;
@@ -136,6 +138,12 @@ void Cpu::step() {
     u32 ins = gm::r32(pc);
     if (g_prof) g_profHist[(pc - 0x00100000) >> 2]++;
     if (isHook(pc)) switch (pc) {
+        case 0x16afd0: // EventProc::Event_DialogWindow: reflow a live message after resizing.
+            refreshViewportDialog(*this);
+            break;
+        case 0x1b129c: // Map::Paint: rebuild the resized tile cache at the next valid paint.
+            refreshViewportMap(*this);
+            break;
         case 0x24c7e4: {
             static bool oracle=false;
             if(oracle) break;

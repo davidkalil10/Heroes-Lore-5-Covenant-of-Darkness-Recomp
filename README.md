@@ -23,7 +23,8 @@ compartilham as correções de CPU, áudio SDL2 e acesso aos recursos.
 No benchmark de PC de 1.200 loops, três repetições por versão, o tempo médio caiu
 de **9,092 para 2,904 ms (3,13x)**; o percentil 95 caiu de **49,740 para 15,219 ms**.
 Esses números medem processamento do loop, não FPS garantido em outras plataformas.
-Android e Switch precisam de novos testes nos aparelhos com os artefatos do Actions.
+O autor também confirmou execução fluida e áudio funcionando no Android e no Switch
+com a integração de desempenho e som.
 
 O Actions verifica Windows/Linux contra o interpretador original antes de empacotar:
 14 comparações de estado ARM, consultas VFS, 11 imagens idênticas e sinal de áudio.
@@ -38,6 +39,32 @@ Detalhes de arquitetura e diagnóstico: [docs/RUNTIME.md](docs/RUNTIME.md).
 Continuidade entre IAs: [docs/HANDOFF.md](docs/HANDOFF.md).
 
 ---
+
+## Modos de tela: Native, Wide e Auto
+
+A visualização agora pode renderizar mais cenário, mantendo as proporções e o
+tamanho dos sprites dentro do jogo:
+
+| Modo | Comportamento |
+| --- | --- |
+| **Native** | Tela original de 240×400, com bordas quando necessário. Padrão inicial. |
+| **Wide** | Campo de visão de aproximadamente 16:9, com 712×400 pixels de jogo. |
+| **Auto** | Adapta o campo de visão à janela/tela disponível, inclusive ao girar o Android. |
+
+Alterne em tempo real pelo botão **NATIVE / WIDE / AUTO** no canto superior
+direito, por **F9** no PC, ou segurando **Select + Start** no controle
+(**− e +** no Switch). A escolha fica salva para a próxima abertura.
+**F11 / Alt+Enter** alterna tela cheia no PC. Em Auto, redimensionar a janela
+atualiza a área renderizada. Wide em uma tela vertical mantém bordas; Auto é o
+modo para aproveitar a proporção disponível.
+
+O cenário, a câmera e o buffer de mapas são recalculados; a imagem não é
+esticada. Mapas menores que a área visível continuam limitados pelo conteúdo
+original. A resolução interna tem limite de 1280 por dimensão para controlar
+memória e custo de desenho. Mais detalhes e testes: [docs/DISPLAY.md](docs/DISPLAY.md).
+
+Para iniciar com um modo específico: `hl5.exe --aspect auto` (também aceita
+`native` e `wide`). A opção de linha de comando não substitui a preferência salva.
 
 ## 🎮 Controles
 
@@ -64,6 +91,8 @@ Continuidade entre IAs: [docs/HANDOFF.md](docs/HANDOFF.md).
 - **Select / L3**: Mapa Rápido
 - **R3**: Alternar Poção / Item
 - **Start**: Menu / Pausa
+- **Select + Start** (Switch: **− e +**): Alternar Native / Wide / Auto
+- Select e Start sozinhos atuam ao soltar, para não abrir mapa/menu durante a combinação.
 
 ### Mouse / Touch
 - Clique e arraste na tela para ativar o direcional virtual dinâmico.
