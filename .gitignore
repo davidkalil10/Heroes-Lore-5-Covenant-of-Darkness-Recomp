@@ -69,3 +69,10 @@ scratch/
 
 # User display preference
 /data/display.ini
+
+# Per-device preferences, OAuth tokens and recovery packages
+/data/services.json
+/data/cloud_auth.json*
+/data/updates/
+/data/save-backups/
+/data/restore-*/

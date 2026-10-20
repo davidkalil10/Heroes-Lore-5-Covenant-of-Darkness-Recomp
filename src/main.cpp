@@ -1,6 +1,9 @@
 // HL5 recomp - Windows host entry point (SDL2). Milestone 0 bootstrap: ARM interpreter + HLE.
 #include "hle/hle.h"
 #include "display_layout.h"
+#include "input_mapping.h"
+#include "services.h"
+#include "service_ui.h"
 #include <SDL.h>
 #include "audio/audio.h"
 #include <algorithm>
@@ -41,6 +44,11 @@ static void ensureAndroidAssets(const std::string& storageDir) {
     }
     SDL_RWclose(mf);
 
+    auto manifestPath=storageDir+"/assets_manifest.sha256";
+    auto fingerprint=services::sha256(std::vector<uint8_t>(content.begin(),content.end()));
+    bool manifestUnchanged=false;
+    try {manifestUnchanged=services::readText(manifestPath,128)==fingerprint;} catch(...) {}
+    bool extractionFailed=false;
     std::istringstream iss(content);
     std::string line;
     int extracted = 0, skipped = 0;
@@ -49,16 +57,26 @@ static void ensureAndroidAssets(const std::string& storageDir) {
         if (line.empty()) continue;
         auto sep = line.rfind(':');
         if (sep == std::string::npos) continue;
+        std::string digest;
+        std::string sizeText=line.substr(sep+1);
+        if(sizeText.size()==64) {
+            digest=sizeText;line=line.substr(0,sep);sep=line.rfind(':');
+            if(sep==std::string::npos) continue;
+            sizeText=line.substr(sep+1);
+        }
         std::string relPath = line.substr(0, sep);
-        size_t expectedSize = (size_t)std::stoull(line.substr(sep + 1));
+        size_t expectedSize = (size_t)std::stoull(sizeText);
 
         std::string dst = storageDir + "/" + relPath;
         std::error_code ec;
         if (std::filesystem::exists(dst, ec)) {
             auto curSize = std::filesystem::file_size(dst, ec);
             if (!ec && curSize == expectedSize) {
-                skipped++;
-                continue; // up to date
+                bool current=manifestUnchanged || digest.empty();
+                if(!current) {
+                    try {auto bytes=services::readText(dst,128*1024*1024);current=services::sha256(std::vector<uint8_t>(bytes.begin(),bytes.end()))==digest;} catch(...) {}
+                }
+                if(current) {skipped++;continue;}
             }
         }
 
@@ -66,21 +84,25 @@ static void ensureAndroidAssets(const std::string& storageDir) {
         SDL_RWops* src = SDL_RWFromFile(relPath.c_str(), "rb");
         if (!src) {
             LOGE("[android] Failed to open APK asset: %s\n", relPath.c_str());
+            extractionFailed=true;
             continue;
         }
         FILE* out = fopen(dst.c_str(), "wb");
-        if (!out) { SDL_RWclose(src); continue; }
+        if (!out) {extractionFailed=true;SDL_RWclose(src);continue;}
 
         std::vector<uint8_t> buf(64 * 1024);
+        size_t extractedBytes=0;
         while (true) {
             size_t n = SDL_RWread(src, buf.data(), 1, buf.size());
             if (n == 0) break;
-            fwrite(buf.data(), 1, n, out);
+            if(fwrite(buf.data(),1,n,out)!=n) extractionFailed=true;
+            extractedBytes+=n;
         }
-        fclose(out);
+        if(fclose(out)!=0 || extractedBytes!=expectedSize) extractionFailed=true;
         SDL_RWclose(src);
         extracted++;
     }
+    if(!extractionFailed) {try {services::writeText(manifestPath,fingerprint);} catch(...) {}}
     LOGI("[android] Assets check done: %d extracted, %d skipped\n", extracted, skipped);
 }
 #else
@@ -98,44 +120,6 @@ static void dumpBmp(const std::string& path, const Screen& s) {
     fwrite(hdr, 1, 54, f);
     fwrite(s.px.data(), 4, s.px.size(), f);
     fclose(f);
-}
-
-static int mapKey(SDL_Keycode k) {
-    switch (k) {
-        case SDLK_UP: case SDLK_w: return WK_UP;
-        case SDLK_DOWN: case SDLK_s: return WK_DOWN;
-        case SDLK_LEFT: case SDLK_a: return WK_LEFT;
-        case SDLK_RIGHT: case SDLK_d: return WK_RIGHT;
-        case SDLK_RETURN: case SDLK_z: case SDLK_SPACE: case SDLK_j: return WK_SELECT;
-        case SDLK_ESCAPE: case SDLK_x: case SDLK_BACKSPACE: case SDLK_k: return WK_CLEAR;
-        case SDLK_u: case SDLK_q: return '1';
-        case SDLK_i: case SDLK_e: return '3';
-        case SDLK_o: case SDLK_r: return '7';
-        case SDLK_p: case SDLK_t: return '9';
-        case SDLK_m: return '0';
-    }
-    if (k >= SDLK_0 && k <= SDLK_9) return '0' + (k - SDLK_0);
-    return 0;
-}
-
-static int mapControllerButton(Uint8 btn) {
-    switch (btn) {
-        case SDL_CONTROLLER_BUTTON_DPAD_UP: return WK_UP;
-        case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return WK_DOWN;
-        case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return WK_LEFT;
-        case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return WK_RIGHT;
-        case SDL_CONTROLLER_BUTTON_A: return WK_SELECT; // A (Xbox/PC) -> Confirm / Attack / Interact
-        case SDL_CONTROLLER_BUTTON_B: return WK_CLEAR;  // B (Xbox/PC) -> Cancel / Menu Back / Status
-        case SDL_CONTROLLER_BUTTON_X: return '1';       // X -> Skill 1
-        case SDL_CONTROLLER_BUTTON_Y: return '3';       // Y -> Skill 2
-        case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return '7';  // LB -> Skill 3
-        case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return '9'; // RB -> Use Item / Potion
-        case SDL_CONTROLLER_BUTTON_START: return WK_CLEAR;    // Start -> Menu / Pause
-        case SDL_CONTROLLER_BUTTON_BACK: return '0';         // Select -> Map
-        case SDL_CONTROLLER_BUTTON_LEFTSTICK: return '0';    // L3 -> Map
-        case SDL_CONTROLLER_BUTTON_RIGHTSTICK: return '#';   // R3 -> Potion switch
-        default: return 0;
-    }
 }
 
 #ifdef _WIN32
@@ -323,7 +307,8 @@ int main(int argc, char** argv) {
 #endif
     int frames = -1, dumpEvery = 0, lw = 240, lh = 400;
     bool headless = false, verbose = false;
-    int availableW=0,availableH=0;
+    int availableW=0,availableH=0,settingsAt=-1;
+    std::string dumpUi;
     AspectMode requestedMode=AspectMode::Native;
     bool hasModeOverride=false;
     std::map<int,AspectMode> scriptModes;
@@ -351,6 +336,8 @@ int main(int argc, char** argv) {
             if(sscanf(argv[++i],"%d:%dx%d",&frame,&w,&h)!=3 || frame<0 || w<1 || h<1) return 2;
             scriptWindows[frame]={w,h};
         }
+        else if(a=="--settings-at" && i+1<argc) settingsAt=atoi(argv[++i]);
+        else if(a=="--dump-ui" && i+1<argc) dumpUi=argv[++i];
         else if (a == "--headless") headless = true;
         else if (a == "--verbose") verbose = true;
         else if (a == "--press-at" && i + 1 < argc) {
@@ -486,6 +473,25 @@ int main(int argc, char** argv) {
         }
     };
 
+    if(!headless) {
+        std::string resourceRoot="assets";
+        if(!std::filesystem::exists(resourceRoot+"/ui_font.ttf")) {
+            if(std::filesystem::exists(exeDir+"/assets/ui_font.ttf")) resourceRoot=exeDir+"/assets";
+            else resourceRoot=apk;
+        }
+        std::string executablePath=exeDir+"/hl5.exe";
+#if defined(_WIN32)
+        char modulePath[32768]={};GetModuleFileNameA(nullptr,modulePath,sizeof(modulePath));executablePath=modulePath;
+#elif defined(__SWITCH__)
+        executablePath=(argc>0 && argv[0])?argv[0]:"";
+        if(executablePath.rfind("/",0)==0) executablePath="sdmc:"+executablePath;
+#else
+        executablePath=exeDir+"/hl5";
+#endif
+        services::init(data,executablePath,resourceRoot);
+        serviceui::init(services::resourcePath("ui_font.ttf"),[&](){selectMode(nextAspectMode(aspectMode),true);},[&](){return aspectMode;});
+    }
+    bool wasModal=false;
     if (!headless) {
         int curWinW = 0, curWinH = 0;
         SDL_GetWindowSize(win, &curWinW, &curWinH);
@@ -516,9 +522,16 @@ int main(int argc, char** argv) {
     for (int f = 0; !game.quit && (frames < 0 || f < frames); f++) {
 #endif
         auto frameStart = std::chrono::steady_clock::now();
+        if(!headless && f==settingsAt) serviceui::open();
         if (!headless) {
             SDL_Event e;
             while (SDL_PollEvent(&e)) {
+                bool padNintendo=false;
+                if(e.type==SDL_CONTROLLERBUTTONDOWN || e.type==SDL_CONTROLLERBUTTONUP) padNintendo=nintendoController(e.cbutton.which);
+                // Window/controller lifecycle events must still reach SDL host management.
+                if(e.type!=SDL_QUIT && e.type!=SDL_WINDOWEVENT && e.type!=SDL_CONTROLLERDEVICEADDED && e.type!=SDL_CONTROLLERDEVICEREMOVED) {
+                    if(serviceui::event(e,padNintendo)) continue;
+                }
                 if (e.type == SDL_QUIT) {
                     game.quit = true;
                 } else if(e.type==SDL_WINDOWEVENT) {
@@ -548,7 +561,7 @@ int main(int argc, char** argv) {
                         if(chord==AspectChord::Cycle) selectMode(nextAspectMode(aspectMode),true);
                         continue;
                     }
-                    int k = mapControllerButton(e.cbutton.button);
+                    int k = gamepadKey(e.cbutton.button,nintendoController(e.cbutton.which));
                     if (k) {
                         if (DirectionManager::keyToDirIdx(k) >= 0) dirMgr.onButton(k, true);
                         else game.key(EV_KEY_PRESS, k);
@@ -556,11 +569,11 @@ int main(int argc, char** argv) {
                 } else if (e.type == SDL_CONTROLLERBUTTONUP) {
                     auto chord=aspectChord.button(e.cbutton.button,false);
                     if(chord!=AspectChord::NotHandled) {
-                        if(chord==AspectChord::Map) game.key(EV_KEY_PRESS,'0');
+                        if(chord==AspectChord::SwapSkills) game.key(EV_KEY_PRESS,'#');
                         else if(chord==AspectChord::Menu) game.key(EV_KEY_PRESS,WK_CLEAR);
                         continue;
                     }
-                    int k = mapControllerButton(e.cbutton.button);
+                    int k = gamepadKey(e.cbutton.button,nintendoController(e.cbutton.which));
                     if (k) {
                         if (DirectionManager::keyToDirIdx(k) >= 0) dirMgr.onButton(k, false);
                     }
@@ -576,14 +589,14 @@ int main(int argc, char** argv) {
                     } else if (e.key.keysym.sym == SDLK_F9) {
                         if(!e.key.repeat) selectMode(nextAspectMode(aspectMode),true);
                     } else {
-                        int k = mapKey(e.key.keysym.sym);
+                        int k = gameKey(e.key.keysym.sym);
                         if (k) {
                             if (DirectionManager::keyToDirIdx(k) >= 0) dirMgr.onButton(k, true);
                             else if (!e.key.repeat) game.key(EV_KEY_PRESS, k);
                         }
                     }
                 } else if (e.type == SDL_KEYUP) {
-                    int k = mapKey(e.key.keysym.sym);
+                    int k = gameKey(e.key.keysym.sym);
                     if (k) {
                         if (DirectionManager::keyToDirIdx(k) >= 0) dirMgr.onButton(k, false);
                     }
@@ -604,7 +617,7 @@ int main(int argc, char** argv) {
                     handlePointer(EV_PTR_MOVE, (int)(e.tfinger.x * winW), (int)(e.tfinger.y * winH));
                 }
             }
-            dirMgr.update(game);
+            if(!serviceui::active()) dirMgr.update(game);
         }
         if(scriptModes.count(f)) selectMode(scriptModes[f],false);
         if(scriptWindows.count(f)) {
@@ -633,8 +646,22 @@ int main(int argc, char** argv) {
             int k = scriptKeys[f - 2];
             game.key(EV_KEY_RELEASE, k);
         }
+        auto serviceStatus=(!headless)?services::status():services::Status{};
+        if(!headless && serviceStatus.quitRequested) break;
+        if(!headless && serviceStatus.restartRequired && !serviceui::active()) serviceui::open();
+        bool modal=!headless && serviceui::active();
+        if(modal && !wasModal) {
+            if(dirMgr.engineActiveDir) game.key(EV_KEY_RELEASE,dirMgr.engineActiveDir);
+            dirMgr=DirectionManager{};aspectChord.reset();
+            if(gamePointerHeld) {game.touch(EV_PTR_RELEASE,touchX,touchY,0);gamePointerHeld=false;}
+        }
+        wasModal=modal;
         auto loopStart = std::chrono::steady_clock::now();
-        game.frame();
+        if(!modal && !game.quit) {
+            serviceui::beginGuestFrame();
+            game.frame();
+            if(!headless) serviceui::endGuestFrame();
+        }
         if (benchmark) frameTimes.push_back(std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now()-loopStart).count());
         if (!dumpDir.empty() && dumpEvery > 0 && (f % dumpEvery == 0)) dumpBmp(dumpDir + "/frame_" + std::to_string(f) + ".bmp", game.screen);
         if (!headless && game.screen.w > 0) {
@@ -651,6 +678,12 @@ int main(int argc, char** argv) {
             SDL_RenderClear(ren);
             SDL_RenderCopy(ren, tex, nullptr, &dst);
             drawAspectButton(ren,aspectMode,winW,winH);
+            serviceui::draw(ren,winW,winH);
+            if(!dumpUi.empty() && f==frames-1) {
+                Screen capture;SDL_GetRendererOutputSize(ren,&capture.w,&capture.h);
+                capture.px.resize(size_t(capture.w)*capture.h);
+                if(SDL_RenderReadPixels(ren,nullptr,SDL_PIXELFORMAT_ARGB8888,capture.px.data(),capture.w*4)==0) dumpBmp(dumpUi,capture);
+            }
             SDL_RenderPresent(ren);
         }
         if (!headless && !rendererVsync) {
@@ -691,10 +724,11 @@ int main(int argc, char** argv) {
     for (auto* c : controllers) {
         if (c) SDL_GameControllerClose(c);
     }
+    if(!headless) {services::shutdown();serviceui::shutdown();}
     Audio::shutdown();
     if (!headless) SDL_Quit();
 #ifdef __SWITCH__
-    romfsExit();
+    if(!services::romfsWasReleased()) romfsExit();
     if (s_bootLog) {
         fclose(s_bootLog);
         s_bootLog = nullptr;

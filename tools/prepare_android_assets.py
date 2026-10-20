@@ -3,13 +3,19 @@
 Prepara a pasta android/app/src/main/assets/ para ser embutida diretamente no APK do Android.
 """
 import os
+import hashlib
 import shutil
+from pathlib import Path
 
 def prepare_android_assets():
     assets_dir = os.path.join("android", "app", "src", "main", "assets")
     if os.path.exists(assets_dir):
         shutil.rmtree(assets_dir)
     os.makedirs(assets_dir, exist_ok=True)
+
+    for entry in Path("assets").iterdir():
+        if entry.is_file():
+            shutil.copy2(entry, os.path.join(assets_dir, entry.name))
 
     candidates = [
         ("dist/libHeroesLore5.so", "libHeroesLore5.so"),
@@ -25,7 +31,9 @@ def prepare_android_assets():
             shutil.copy2(src, os.path.join(assets_dir, dst))
 
     if os.path.exists("data"):
-        shutil.copytree("data", os.path.join(assets_dir, "data"), dirs_exist_ok=True)
+        os.makedirs(os.path.join(assets_dir, "data"), exist_ok=True)
+        if os.path.isfile("data/dict.bin"):
+            shutil.copy2("data/dict.bin", os.path.join(assets_dir, "data", "dict.bin"))
     if os.path.exists("assets_override"):
         shutil.copytree("assets_override", os.path.join(assets_dir, "assets_override"), dirs_exist_ok=True)
     if os.path.exists("dist/c"):
@@ -37,7 +45,8 @@ def prepare_android_assets():
             full = os.path.join(root, f)
             rel = os.path.relpath(full, assets_dir).replace("\\", "/")
             if rel != "assets_list.txt":
-                manifest.append(f"{rel}:{os.path.getsize(full)}")
+                digest = hashlib.sha256(Path(full).read_bytes()).hexdigest()
+                manifest.append(f"{rel}:{os.path.getsize(full)}:{digest}")
     with open(os.path.join(assets_dir, "assets_list.txt"), "w", encoding="utf-8") as mf:
         mf.write("\n".join(manifest) + "\n")
 

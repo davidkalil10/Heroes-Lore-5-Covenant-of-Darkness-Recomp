@@ -95,6 +95,7 @@ jobs:
           ctest --test-dir build --output-on-failure
           python tools/verify_runtime.py --exe build/hl5.exe
           python tools/verify_aspect.py --exe build/hl5.exe
+          python tools/verify_services.py
 
       - name: Upload Windows Runtime Diagnostics
         if: always()
@@ -104,11 +105,13 @@ jobs:
           path: |
             build/runtime-verification/
             build/aspect-verification/
+            build/services-verification/
 
       - name: Package Windows Portable Release
         shell: msys2 {0}
         run: |
           mkdir -p dist_windows
+          cp -r assets dist_windows/assets
           cp build/hl5.exe dist_windows/heroes_lore_5.exe
           cp build/hl5.exe dist_windows/hl5.exe
           if [ -d "$MINGW_PREFIX/bin" ]; then
@@ -121,7 +124,8 @@ jobs:
           cp reference/extracted_apk/lib/armeabi/libHeroesLore5.so dist_windows/ 2>/dev/null || cp dist/libHeroesLore5.so dist_windows/ 2>/dev/null || true
           cp data/dict.bin dist_windows/ 2>/dev/null || cp dist/dict.bin dist_windows/ 2>/dev/null || true
           if [ -d "data" ]; then
-            cp -r data dist_windows/
+            mkdir -p dist_windows/data
+            cp data/dict.bin dist_windows/data/ 2>/dev/null || true
           fi
           if [ -d "assets_override" ]; then
             cp -r assets_override dist_windows/
@@ -160,6 +164,7 @@ jobs:
             cmake \
             ninja-build \
             libsdl2-dev \
+            libcurl4-openssl-dev \
             pkg-config \
             wget \
             file
@@ -174,6 +179,7 @@ jobs:
           ctest --test-dir build --output-on-failure
           python3 tools/verify_runtime.py --exe build/hl5
           python3 tools/verify_aspect.py --exe build/hl5
+          python3 tools/verify_services.py
 
       - name: Upload Linux Runtime Diagnostics
         if: always()
@@ -183,6 +189,7 @@ jobs:
           path: |
             build/runtime-verification/
             build/aspect-verification/
+            build/services-verification/
 
       - name: Prepare AppDir
         run: |

@@ -15,9 +15,23 @@ public class ApkFileProvider extends ContentProvider {
         return true;
     }
 
+    private File resolveApk(Uri uri) throws FileNotFoundException {
+        try {
+            File allowed = new File(getContext().getFilesDir(), "data/updates").getCanonicalFile();
+            File file = new File(uri.getPath()).getCanonicalFile();
+            if (!file.getPath().startsWith(allowed.getPath() + File.separator) || !file.getName().endsWith(".apk") || !file.isFile()) {
+                throw new FileNotFoundException("Invalid update APK");
+            }
+            return file;
+        } catch (java.io.IOException error) {
+            throw new FileNotFoundException("Cannot resolve update APK");
+        }
+    }
+
     @Override
     public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
-        File file = new File(uri.getPath());
+        if (!"r".equals(mode)) throw new FileNotFoundException("Read only");
+        File file = resolveApk(uri);
         if (file.exists()) {
             return ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
         }
@@ -31,8 +45,8 @@ public class ApkFileProvider extends ContentProvider {
 
     @Override
     public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
-        File file = new File(uri.getPath());
-        if (!file.exists()) return null;
+        File file;
+        try { file = resolveApk(uri); } catch (FileNotFoundException error) { return null; }
         String[] cols = projection != null ? projection : new String[]{"_display_name", "_size"};
         MatrixCursor cursor = new MatrixCursor(cols, 1);
         MatrixCursor.RowBuilder row = cursor.newRow();

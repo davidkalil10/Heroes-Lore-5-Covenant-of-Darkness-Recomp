@@ -38,7 +38,7 @@ ViewportSize viewportForAspect(AspectMode mode, int availableWidth, int availabl
 AspectMode loadAspectMode(const std::string& path) {
     std::ifstream input(path);
     std::string line;
-    AspectMode mode = AspectMode::Native;
+    AspectMode mode = AspectMode::Auto;
     while (std::getline(input, line)) {
         if (!line.empty() && line.back() == '\r') line.pop_back();
         if (line.rfind("aspect=", 0) == 0) parseAspectMode(line.substr(7), mode);
@@ -112,7 +112,7 @@ AspectChord::Result AspectChord::button(Uint8 button, bool down) {
     }
     if (!held) return Consumed;
     held = false;
-    Result result = used ? Consumed : button == SDL_CONTROLLER_BUTTON_BACK ? Map : Menu;
+    Result result = used ? Consumed : button == SDL_CONTROLLER_BUTTON_BACK ? SwapSkills : Menu;
     if (!back && !start) used = false;
     return result;
 }

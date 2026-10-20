@@ -20,7 +20,7 @@ void drawAspectButton(SDL_Renderer* renderer, AspectMode mode, int windowWidth, 
 // sends either action to the game, regardless of which button was pressed first.
 struct AspectChord {
     bool back = false, start = false, used = false;
-    enum Result { NotHandled, Consumed, Cycle, Map, Menu };
+    enum Result { NotHandled, Consumed, Cycle, SwapSkills, Menu };
     Result button(Uint8 button, bool down);
     void reset() { back = start = used = false; }
 };

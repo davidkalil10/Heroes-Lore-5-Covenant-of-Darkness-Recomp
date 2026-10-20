@@ -21,7 +21,7 @@ ROMFS       :=  romfs
 APP_TITLE   :=  Heroes Lore 5: Covenant of Darkness
 APP_DESCRIPTION := Recompilacao Nativa C++17 + SDL2 por David Kalil Braga (2026)
 APP_AUTHOR  :=  Electronic Arts / Port por David Kalil Braga (2026)
-APP_VERSION :=  1.0.0
+APP_VERSION :=  1.1.0
 APP_TITLEID :=  0100484C55000000
 APP_ICON    :=  $(TOPDIR)/switch/icon.jpg
 
@@ -41,7 +41,7 @@ CXXFLAGS    := $(CFLAGS) -std=gnu++17 -fexceptions -pthread
 ASFLAGS :=  -g $(ARCH)
 LDFLAGS = -specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -pthread -Wl,-Map,$(notdir $*.map)
 
-LIBS    := -L$(PORTLIBS)/lib -L$(LIBNX)/lib -lz -lSDL2 -lEGL -lglapi -ldrm_nouveau -lnx
+LIBS    := -L$(PORTLIBS)/lib -L$(LIBNX)/lib -lcurl -lmbedtls -lmbedx509 -lmbedcrypto -lz -lSDL2 -lEGL -lglapi -ldrm_nouveau -lnx
 
 LIBDIRS := $(PORTLIBS) $(LIBNX)
 

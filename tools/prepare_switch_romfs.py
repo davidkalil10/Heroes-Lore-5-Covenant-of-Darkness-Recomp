@@ -4,6 +4,7 @@ Prepara a pasta romfs/ para ser embutida diretamente no heroes_lore_5.nro do Nin
 """
 import os
 import shutil
+from pathlib import Path
 
 def prepare_romfs():
     romfs_dir = "romfs"
@@ -12,6 +13,10 @@ def prepare_romfs():
     os.makedirs(romfs_dir, exist_ok=True)
 
     # 1. Copia arquivos essenciais da raiz / dist
+    for entry in Path("assets").iterdir():
+        if entry.is_file():
+            shutil.copy2(entry, os.path.join(romfs_dir, entry.name))
+
     candidates = [
         ("dist/libHeroesLore5.so", "libHeroesLore5.so"),
         ("reference/extracted_apk/lib/armeabi/libHeroesLore5.so", "libHeroesLore5.so"),
@@ -29,7 +34,9 @@ def prepare_romfs():
     # 2. Copia pasta data/
     if os.path.exists("data"):
         print("[RomFS] Copiando pasta data/...")
-        shutil.copytree("data", os.path.join(romfs_dir, "data"), dirs_exist_ok=True)
+        os.makedirs(os.path.join(romfs_dir, "data"), exist_ok=True)
+        if os.path.isfile("data/dict.bin"):
+            shutil.copy2("data/dict.bin", os.path.join(romfs_dir, "data", "dict.bin"))
 
     # 3. Copia assets_override se existir
     if os.path.exists("assets_override"):

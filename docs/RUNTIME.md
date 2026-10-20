@@ -101,8 +101,8 @@ audio, profiler, or differential verifier. Values are medians across repetitions
 Mean speedup: 3.13x. Raw measurements: `docs/performance_baseline.json`.
 These are loop processing measurements, not guaranteed displayed FPS. Loading
 spikes remain. The user subsequently confirmed good gameplay and audio on PC,
-Android and Switch. This confirmation predates the new aspect modes described
-in `docs/DISPLAY.md`; those require their own device testing.
+Android and Switch. The user also accepted the subsequent aspect modes described in
+`docs/DISPLAY.md`. Version 1.1.0 services/input require separate device testing.
 
 ## Diagnostic switches
 

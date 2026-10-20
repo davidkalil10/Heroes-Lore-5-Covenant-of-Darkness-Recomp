@@ -2,6 +2,7 @@
 #include "trans.h"
 extern std::string g_overrideDir;
 extern void refreshViewportMap(Cpu& cpu);
+extern void notifyPortSettings();
 extern void refreshViewportDialog(Cpu& cpu);
 extern bool fastVfsLookup(u32 manager,u32 name,u32 outOffset,u32& size);
 // Tinted/alpha-mixed RGB565 sprite pixel used by the engine's palettized sprite blitters (0x59664 / 0x59d68).
@@ -31,7 +32,7 @@ static inline bool isHook(u32 pc) {
     if (g_hookMap.empty()) {
         g_hookMap.assign(0x400000, 0);
         static const u32 pcs[] = {0x1417a4, 0x11b348, 0x11feac, 0x11febc, 0x4e03c, 0x4d9f0, 0xc3bbc, 0xc42a0,
-                                  0x6afd0, 0xb129c, 0x14c7e4, 0x418dc, 0x41878, 0x41818, 0x41d78, 0x41940, 0x144db8, 0x145754, 0x59664, 0x59d68, 0x4e7e4, 0x5371c, 0x538c8};
+                                  0x11a1ec, 0x6afd0, 0xb129c, 0x14c7e4, 0x418dc, 0x41878, 0x41818, 0x41d78, 0x41940, 0x144db8, 0x145754, 0x59664, 0x59d68, 0x4e7e4, 0x5371c, 0x538c8};
         for (u32 p : pcs) g_hookMap[p >> 2] = 1;
     }
     u32 o = pc - 0x00100000;
@@ -138,6 +139,9 @@ void Cpu::step() {
     u32 ins = gm::r32(pc);
     if (g_prof) g_profHist[(pc - 0x00100000) >> 2]++;
     if (isHook(pc)) switch (pc) {
+        case 0x21a1ec: // StateMainMenu::DrawOption: expose host Settings alongside original options.
+            notifyPortSettings();
+            break;
         case 0x16afd0: // EventProc::Event_DialogWindow: reflow a live message after resizing.
             refreshViewportDialog(*this);
             break;

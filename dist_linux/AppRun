@@ -4,4 +4,7 @@ HERE="$(dirname "$(readlink -f "${0}")")"
 export PATH="${HERE}/usr/bin:${PATH}"
 export LD_LIBRARY_PATH="${HERE}/usr/lib:${HERE}/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}"
 cd "${HERE}"
-exec "${HERE}/usr/bin/heroes_lore_5" "$@"
+SAVE_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/heroes_lore_5"
+mkdir -p "$SAVE_ROOT"
+if [ -f "$HERE/data/dict.bin" ]; then cp "$HERE/data/dict.bin" "$SAVE_ROOT/dict.bin"; fi
+exec "${HERE}/usr/bin/heroes_lore_5" --data "$SAVE_ROOT" "$@"

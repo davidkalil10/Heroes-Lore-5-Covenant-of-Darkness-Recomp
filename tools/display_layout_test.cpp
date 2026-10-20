@@ -39,7 +39,7 @@ int main() {
     }
     AspectChord chord;
     chord.button(SDL_CONTROLLER_BUTTON_BACK,true);
-    require(chord.button(SDL_CONTROLLER_BUTTON_BACK,false)==AspectChord::Map,"standalone map button");
+    require(chord.button(SDL_CONTROLLER_BUTTON_BACK,false)==AspectChord::SwapSkills,"standalone map button");
     chord.button(SDL_CONTROLLER_BUTTON_START,true);
     require(chord.button(SDL_CONTROLLER_BUTTON_START,false)==AspectChord::Menu,"standalone menu button");
     chord.button(SDL_CONTROLLER_BUTTON_BACK,true);chord.reset();
@@ -47,11 +47,11 @@ int main() {
 
     auto stamp=std::chrono::steady_clock::now().time_since_epoch().count();
     auto path=std::filesystem::temp_directory_path()/std::filesystem::path("hl5-display-test-"+std::to_string(stamp)+".ini");
-    require(loadAspectMode(path.string())==AspectMode::Native,"first-run default");
+    require(loadAspectMode(path.string())==AspectMode::Auto,"first-run default");
     require(saveAspectMode(path.string(),AspectMode::Auto),"save display choice");
     require(loadAspectMode(path.string())==AspectMode::Auto,"restore display choice");
     {std::ofstream file(path);file<<"aspect=invalid\n";}
-    require(loadAspectMode(path.string())==AspectMode::Native,"invalid setting fallback");
+    require(loadAspectMode(path.string())==AspectMode::Auto,"invalid setting fallback");
     std::filesystem::remove(path);
     std::puts("PASS: viewport sizes, controller chord, touch bounds and saved preferences");
 }

@@ -43,6 +43,8 @@ def prepare_appdir(binary_path=None, appdir_path="AppDir"):
         os.chmod(f"{appdir_path}/AppRun", 0o755)
 
     print("[AppImage] Copiando arquivos do jogo...")
+    shutil.copytree("assets", os.path.join(appdir_path, "assets"), dirs_exist_ok=True)
+
     candidates = [
         ("dist/libHeroesLore5.so", "libHeroesLore5.so"),
         ("reference/extracted_apk/lib/armeabi/libHeroesLore5.so", "libHeroesLore5.so"),
@@ -56,7 +58,9 @@ def prepare_appdir(binary_path=None, appdir_path="AppDir"):
             shutil.copy2(src, os.path.join(appdir_path, dst))
 
     if os.path.exists("data"):
-        shutil.copytree("data", os.path.join(appdir_path, "data"), dirs_exist_ok=True)
+        os.makedirs(os.path.join(appdir_path, "data"), exist_ok=True)
+        if os.path.isfile("data/dict.bin"):
+            shutil.copy2("data/dict.bin", os.path.join(appdir_path, "data", "dict.bin"))
     if os.path.exists("assets_override"):
         shutil.copytree("assets_override", os.path.join(appdir_path, "assets_override"), dirs_exist_ok=True)
     if os.path.exists("dist/c"):

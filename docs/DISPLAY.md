@@ -6,7 +6,7 @@ Cycle Native → Wide → Auto → Native with F9, the top-right NATIVE/WIDE/AUT
 button (mouse or touch), or Back/Select + Start (Switch − and +). Individual
 Back/Start actions are sent on release; a chord consumes both actions. F11 or
 Alt+Enter toggles desktop fullscreen. The preference is stored separately from
-saves in `<data-root>/display.ini`; missing/invalid preference defaults to Native.
+saves in `<data-root>/display.ini`; missing/invalid preference defaults to Auto as of 1.1.0. Existing explicit choices are preserved.
 `--aspect native|wide|auto` overrides startup without writing the preference.
 
 Native uses 240×400. Wide uses 712×400 (16:9 rounded to an even pixel width).
@@ -77,7 +77,8 @@ Diagnostic options `--window WxH`, `--window-at frame:WxH` and
 `--aspect-at frame:native|wide|auto` support reproducible tests. Desktop Wide
 selection enlarges a portrait window to 960×540; mobile uses its existing screen.
 
-PC checks do not replace Android/Switch tests: check touch/button placement,
+The user confirmed all aspect modes working after the preceding integration.
+For future changes, PC checks do not replace Android/Switch tests: check touch/button placement,
 rotation, docked/handheld operation, existing saves, UI, map boundaries and
-performance on larger maps. The user's successful Android/Switch report applies
-to the preceding performance/audio integration, before these aspect changes.
+performance on larger maps. The user's latest feedback covers performance, audio and aspect modes; the 1.1.0
+services/input changes need their own device validation.

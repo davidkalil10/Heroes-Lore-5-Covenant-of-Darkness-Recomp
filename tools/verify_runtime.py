@@ -36,7 +36,7 @@ def main():
             dump = temporary / label / 'frames'
             command = [str(exe), '--apk', str(root / 'reference/extracted_apk'),
                        '--data', str(temporary / label / 'saves'), '--headless',
-                       '--frames', '1200', '--dump', str(dump), '--dump-every', '120', *keys]
+                       '--frames', '1200', '--aspect', 'native', '--dump', str(dump), '--dump-every', '120', *keys]
             log = reports / f'{label}.log'
             with log.open('w', encoding='utf-8') as output:
                 subprocess.run(command, cwd=root, env=run_env, stdout=output,

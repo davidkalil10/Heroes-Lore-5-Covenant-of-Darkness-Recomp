@@ -29,8 +29,8 @@ Windows MSYS2 environment explicitly installs UCRT64 Python for this check.
 
 The prior isolated PC benchmark measured a 3.13x mean improvement. The user has
 confirmed gameplay and sound on PC, Android and Switch. This is explicit user
-device feedback for the runtime integration. The new aspect feature below has
-separate PC verification and still needs gameplay tests on Android/Switch.
+device feedback for the runtime integration. The user later accepted the aspect
+feature as working too; version 1.1.0 services/input need separate device tests.
 
 For Android/Switch reports collect:
 
@@ -64,3 +64,18 @@ Run `ctest --test-dir build --output-on-failure`, the runtime verifier, and
 all three on Windows and Linux and uploads the aspect captures/logs. Exercise map
 transitions, menus, existing saves, dialogue, touch controls, orientation and
 docked/handheld modes on devices before declaring full feature coverage.
+
+## 1.1.0 Settings, platform services and input
+
+The user confirmed the complete preceding aspect/performance/audio integration
+working. Current additions: Auto default, native Nintendo A/B and X/Y labels,
+C/Tab/# and Select/− for skill-row switch, L3 map, R3/F10 Settings, and Google
+Drive backup plus GitHub release update services. See `docs/SERVICES.md` for
+architecture, required tests, recovery, packaging and exact release asset names.
+The existing native options remain reachable when the host panel is closed.
+
+Save restoration uses validated raw guest files with safety backup and mandatory
+app reopen. Do not copy Java RMS or live VM-reload code from HL1/HL2/Zero. No
+tests authorize/upload real player saves: Drive and download routes are mocked.
+Google login and real cross-device save migration still need user validation,
+as do OS installers/NRO replacement. README was rewritten as the user guide.

@@ -133,15 +133,17 @@ The Help menu (`c/csv2/help_android_skt.dat`, `help_ktf.dat`, etc.) contains 21 
 - **Auto-detection:** Automatically hooks `SDL_CONTROLLERDEVICEADDED` and `SDL_CONTROLLERDEVICEREMOVED`.
 - **Directional Controls:** Supports both the physical D-Pad and the Left Analog Stick (with a deadzone threshold of 12,000 for activation and 8,000 for release).
 - **Default Button Mapping:**
-  - `A` (Xbox) / `B` (Switch): Action / Attack / Interact (`WK_SELECT = -5`)
-  - `B` (Xbox) / `A` (Switch): Cancel / Open Menu / Status (`WK_CLEAR = -16`)
-  - `X` (Xbox) / `Y` (Switch): Quick Skill 1 (`'1'`)
-  - `Y` (Xbox) / `X` (Switch): Quick Skill 2 (`'3'`)
+  - `A` (Xbox / Switch): Action / Attack / Interact (`WK_SELECT = -5`)
+  - `B` (Xbox / Switch): Cancel / Open Menu / Status (`WK_CLEAR = -16`)
+  - `X` (Xbox / Switch): Quick Skill 1 (`'1'`)
+  - `Y` (Xbox / Switch): Quick Skill 2 (`'3'`)
   - `LB`: Quick Skill 3 (`'7'`)
   - `RB`: Quick Item / Potion (`'9'`)
   - `Start`: Menu / Pause (`WK_CLEAR = -16`)
-  - `Back / Select / L3`: Toggle Minimap (`'0'`)
-  - `R3`: Potion Switch (`'#'`)
+  - `Back / Select / −`: Skill row switch (`'#'`), on release.
+  - `L3`: Minimap (`'0'`); `R3`: host Settings.
+  - Keyboard `C`, Tab or `#`: skill row switch.
+  - Nintendo A/B and X/Y use their printed labels; see `src/input_mapping.cpp`.
 
 ---
 
@@ -161,8 +163,9 @@ The Help menu (`c/csv2/help_android_skt.dat`, `help_ktf.dat`, etc.) contains 21 
 - Run CTest, `tools/verify_aspect.py`, and the runtime verifier after changes.
   The aspect test verifies actual scenery expansion, identical tile pixels,
   live dialog/orientation changes, 60 repeated resizes, and nonzero audio.
-- The user validated the preceding audio/performance integration on Android and
-  Switch; the new aspect modes still require device gameplay tests.
+- The user confirmed audio, performance and the aspect modes on the integrated
+  build. Version 1.1.0 services/input still require their own device validation.
+- Auto is now the missing/invalid-preference default. Preserve explicit saved choices.
 
 ---
 
@@ -247,14 +250,14 @@ The project includes an end-to-end automated pipeline:
 - [x] Standalone portable distribution (`dist/`).
 
 ### Milestone 2: Modernization & Quality of Life (In Progress)
-- [ ] **True Widescreen & Auto Aspect Ratio:** Modify viewport culling in `nativeInitDisplay` / `Camera` / `Graphic` to render additional map tiles dynamically instead of letterboxing.
+- [x] **True Widescreen & Auto Aspect Ratio:** Modify viewport culling in `nativeInitDisplay` / `Camera` / `Graphic` to render additional map tiles dynamically instead of letterboxing.
 - [ ] **Gamepad Polish:** On-screen button prompt glyphs matching connected controller (Xbox/PlayStation/Switch).
 - [ ] **Multilanguage (PT-BR):** Implement Portuguese translation using the established translation pipeline.
-- [ ] **Cloud Saves & Cross-Platform Save Compatibility:** Save slot sync and cloud backup format compatible with other Heroes Lore ports.
+- [x] **Cloud Saves:** Google device login and manual backup/restore implemented for HL5; real device/account roundtrip pending. Separate archives from other games.
 
 ### Milestone 3: Cross-Platform Ports
-- [x] **Nintendo Switch:** libnx + SDL2 build pipeline available; validate the new shared runtime on hardware.
-- [x] **Android ARM64:** Android NDK build pipeline and touch controls available; validate the new shared runtime on hardware.
+- [x] **Nintendo Switch:** libnx + SDL2 build pipeline available; the user accepted shared runtime/aspect gameplay; validate new services on hardware.
+- [x] **Android ARM64:** Android NDK build pipeline and touch controls available; the user accepted shared runtime/aspect gameplay; validate new services on hardware.
 
 ---
 
@@ -269,3 +272,21 @@ ninja -C build
 
 ### Run Standalone:
 Double-click `dist\hl5.exe`.
+
+## 11. Settings, cloud saves and updates — 1.1.0
+
+Read `docs/SERVICES.md` before changing networking, save paths, installers or
+version metadata. The shared services do not run in headless game tests.
+Settings pauses guest frames; after restore the guest MUST NOT resume. Close and
+reopen instead, or stale in-memory saves could overwrite the downloaded files.
+Archive only internal/external files, never OAuth tokens or device preferences.
+Keep transactional restore safety copies and installer rollback. Keep TLS peer
+verification enabled, including Switch's RomFS CA bundle.
+
+Required checks now include CTest and `python tools/verify_services.py`, in
+addition to runtime/aspect scripts. Services tests use mocked transport, never a
+real Google account. Package only public data/dict.bin plus runtime assets;
+never restore the old whole-data-directory copy rules. Existing OAuth client is
+reused from Zero; game IDs, Drive folder and save filenames stay HL5-specific.
+Version changes must update C++ services::Version, Android name/code and Switch
+metadata. Actions artifacts are not releases and do not trigger the updater.
