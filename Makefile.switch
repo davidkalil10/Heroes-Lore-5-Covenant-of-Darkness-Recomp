@@ -95,7 +95,7 @@ export NROFLAGS :=
 ifeq ($(strip $(ROMFS)),)
     export NROFLAGS +=
 else
-    export NROFLAGS += --romfsdir=$(CURDIR)/$(ROMFS)
+    export NROFLAGS += --romfsdir=$(TOPDIR)/$(ROMFS)
 endif
 
 ifneq ($(strip $(APP_ICON)),)

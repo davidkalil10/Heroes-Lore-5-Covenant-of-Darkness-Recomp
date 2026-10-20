@@ -33,6 +33,8 @@ void init(const std::string& customPath) {
             candidates.push_back(customPath.substr(0, slash) + "/../dict.bin");
         }
     }
+    candidates.push_back("romfs:/dict.bin");
+    candidates.push_back("romfs:/data/dict.bin");
     candidates.push_back("data/dict.bin");
     candidates.push_back("dist/dict.bin");
     candidates.push_back("../data/dict.bin");
@@ -40,7 +42,9 @@ void init(const std::string& customPath) {
 
     std::string foundPath;
     for (const auto& p : candidates) {
-        if (std::filesystem::exists(p)) {
+        FILE* tf = fopen(p.c_str(), "rb");
+        if (tf) {
+            fclose(tf);
             foundPath = p;
             break;
         }

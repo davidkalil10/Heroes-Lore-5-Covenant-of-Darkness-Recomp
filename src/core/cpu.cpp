@@ -105,10 +105,12 @@ void Cpu::step() {
             u32 pathPtr = r[0];
             u32 outSizePtr = r[1];
             std::string p = (pathPtr >= 0x1000 && pathPtr < gm::MEM_SIZE) ? gm::cstr(pathPtr) : "";
-            std::string overridePath = "assets_override" + (p.empty() || p[0] != '/' ? "/" + p : p);
+            std::string cleanP = (!p.empty() && p[0] == '/') ? p.substr(1) : p;
+            std::string overridePath = "assets_override/" + cleanP;
             FILE* f = fopen(overridePath.c_str(), "rb");
             if (!f && !g_overrideDir.empty()) {
-                overridePath = g_overrideDir + (p.empty() || p[0] != '/' ? "/" + p : p);
+                std::string sep = (g_overrideDir.back() == '/') ? "" : "/";
+                overridePath = g_overrideDir + sep + cleanP;
                 f = fopen(overridePath.c_str(), "rb");
             }
             if (f) {

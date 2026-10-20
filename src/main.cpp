@@ -13,6 +13,8 @@
 
 #ifdef __SWITCH__
 #include <switch.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #endif
 
 #ifdef __ANDROID__
@@ -44,15 +46,15 @@ static void ensureAndroidAssets(const std::string& storageDir) {
         size_t expectedSize = (size_t)std::stoull(line.substr(sep + 1));
 
         std::string dst = storageDir + "/" + relPath;
-        if (std::filesystem::exists(dst)) {
-            std::error_code ec;
+        std::error_code ec;
+        if (std::filesystem::exists(dst, ec)) {
             auto curSize = std::filesystem::file_size(dst, ec);
             if (!ec && curSize == expectedSize) {
                 continue; // up to date
             }
         }
 
-        std::filesystem::create_directories(std::filesystem::path(dst).parent_path());
+        std::filesystem::create_directories(std::filesystem::path(dst).parent_path(), ec);
         SDL_RWops* src = SDL_RWFromFile(relPath.c_str(), "rb");
         if (!src) continue;
         FILE* out = fopen(dst.c_str(), "wb");
@@ -239,25 +241,48 @@ struct DirectionManager {
     }
 };
 
+#ifdef __SWITCH__
+static FILE* s_bootLog = nullptr;
+#endif
+
 int main(int argc, char** argv) {
 #ifdef __SWITCH__
-    romfsInit();
+    mkdir("sdmc:/switch", 0777);
+    mkdir("sdmc:/switch/heroes_lore_5", 0777);
+    mkdir("sdmc:/switch/heroes_lore_5/data", 0777);
+    mkdir("sdmc:/switch/heroes_lore_5/data/internal", 0777);
+    mkdir("sdmc:/switch/heroes_lore_5/data/external", 0777);
+    s_bootLog = fopen("sdmc:/switch/heroes_lore_5/boot.log", "w");
+    if (!s_bootLog) s_bootLog = fopen("sdmc:/heroes_lore_boot.log", "w");
+    if (s_bootLog) {
+        dup2(fileno(s_bootLog), STDOUT_FILENO);
+        dup2(fileno(s_bootLog), STDERR_FILENO);
+        setvbuf(stdout, nullptr, _IONBF, 0);
+        setvbuf(stderr, nullptr, _IONBF, 0);
+    }
+    fprintf(stderr, "[Switch] Booting Heroes Lore 5...\n");
+    Result rc = romfsInit();
+    if (R_FAILED(rc)) {
+        fprintf(stderr, "[Switch] romfsInit failed: 0x%x\n", rc);
+    } else {
+        fprintf(stderr, "[Switch] romfsInit OK\n");
+    }
 #endif
 
     std::string exeDir = getExeDir();
     std::string apk = "reference/extracted_apk", data = "data", dumpDir;
 
 #ifdef __SWITCH__
-    apk = "romfs:";
+    apk = "romfs:/";
     data = "sdmc:/switch/heroes_lore_5/data";
-    std::filesystem::create_directories(data);
 #elif defined(__ANDROID__)
     const char* internalStorage = SDL_AndroidGetInternalStoragePath();
     std::string baseStorage = (internalStorage && internalStorage[0] != '\0') ? internalStorage : ".";
     ensureAndroidAssets(baseStorage);
     apk = baseStorage;
     data = baseStorage + "/data";
-    std::filesystem::create_directories(data);
+    std::error_code ec;
+    std::filesystem::create_directories(data, ec);
 #else
     if (!std::filesystem::exists(apk)) {
         if (std::filesystem::exists(exeDir + "/libHeroesLore5.so")) apk = exeDir;
@@ -348,15 +373,46 @@ int main(int argc, char** argv) {
     };
 
     if (!headless) {
+#ifdef __SWITCH__
+        SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER);
+        win = SDL_CreateWindow("Heroes Lore 5: Covenant of Darkness", 0, 0, 1280, 720, 0);
+        if (!win) {
+            win = SDL_CreateWindow("Heroes Lore 5: Covenant of Darkness", 0, 0, 1280, 720, SDL_WINDOW_FULLSCREEN);
+        }
+#elif defined(__ANDROID__)
+        SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+        win = SDL_CreateWindow("Heroes Lore 5: Covenant of Darkness", 0, 0, 0, 0, SDL_WINDOW_FULLSCREEN);
+#else
         SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER);
-        win = SDL_CreateWindow("Heroes Lore 5: Knights of the Blue (Recomp)", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, W * 2, H * 2, SDL_WINDOW_RESIZABLE);
-        ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
+        win = SDL_CreateWindow("Heroes Lore 5: Covenant of Darkness", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, W * 2, H * 2, SDL_WINDOW_RESIZABLE);
+#endif
+        if (!win) {
+            fprintf(stderr, "[SDL] SDL_CreateWindow failed: %s\n", SDL_GetError());
+            return 1;
+        }
+        ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+        if (!ren) {
+            fprintf(stderr, "[SDL] Accelerated renderer failed: %s, falling back to software\n", SDL_GetError());
+            ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_SOFTWARE);
+        }
+        if (!ren) {
+            fprintf(stderr, "[SDL] SDL_CreateRenderer failed: %s\n", SDL_GetError());
+            return 1;
+        }
         tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, W, H);
+        if (!tex) {
+            fprintf(stderr, "[SDL] SDL_CreateTexture failed: %s\n", SDL_GetError());
+            return 1;
+        }
 
         for (int i = 0; i < SDL_NumJoysticks(); i++) openController(i);
     }
     auto t0 = std::chrono::steady_clock::now();
+#ifdef __SWITCH__
+    for (int f = 0; appletMainLoop() && !game.quit && (frames < 0 || f < frames); f++) {
+#else
     for (int f = 0; !game.quit && (frames < 0 || f < frames); f++) {
+#endif
         auto frameStart = std::chrono::steady_clock::now();
         if (!headless) {
             SDL_Event e;
@@ -481,6 +537,10 @@ int main(int argc, char** argv) {
     if (!headless) SDL_Quit();
 #ifdef __SWITCH__
     romfsExit();
+    if (s_bootLog) {
+        fclose(s_bootLog);
+        s_bootLog = nullptr;
+    }
 #endif
     return 0;
 }

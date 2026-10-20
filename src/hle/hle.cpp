@@ -96,10 +96,15 @@ static u64 g_simTimeMs = 1600000000000ULL;
 std::string g_overrideDir;
 static std::map<u32, FILE*> g_files;  // guest FILE* -> host FILE*
 static std::string vfsPath() {
-    std::string p1 = g_apkDir + "/data.vfs.mp3";
-    if (std::filesystem::exists(p1)) return p1;
-    std::string p2 = g_apkDir + "/assets/data.vfs.mp3";
-    if (std::filesystem::exists(p2)) return p2;
+    std::string sep = (g_apkDir.empty() || g_apkDir.back() == '/') ? "" : "/";
+    std::string p1 = g_apkDir + sep + "data.vfs.mp3";
+    FILE* f1 = fopen(p1.c_str(), "rb");
+    if (f1) { fclose(f1); return p1; }
+
+    std::string p2 = g_apkDir + sep + "assets/data.vfs.mp3";
+    FILE* f2 = fopen(p2.c_str(), "rb");
+    if (f2) { fclose(f2); return p2; }
+
     return p1;
 }
 
@@ -670,8 +675,21 @@ static u32 sym(const char* n) {
 }
 
 bool Game::boot(const std::string& apkDir, const std::string& dataDir, int lcdW, int lcdH) {
-    g_apkDir = std::filesystem::absolute(apkDir).generic_string();
-    g_dataDir = std::filesystem::absolute(dataDir).generic_string();
+    if (apkDir.rfind("romfs:", 0) == 0 || apkDir.rfind("sdmc:", 0) == 0) {
+        g_apkDir = apkDir;
+    } else {
+        std::error_code ec;
+        g_apkDir = std::filesystem::absolute(apkDir, ec).generic_string();
+        if (g_apkDir.empty()) g_apkDir = apkDir;
+    }
+
+    if (dataDir.rfind("romfs:", 0) == 0 || dataDir.rfind("sdmc:", 0) == 0) {
+        g_dataDir = dataDir;
+    } else {
+        std::error_code ec;
+        g_dataDir = std::filesystem::absolute(dataDir, ec).generic_string();
+        if (g_dataDir.empty()) g_dataDir = dataDir;
+    }
     G = this;
     fprintf(stderr, "[boot] absApk=%s absData=%s\n", g_apkDir.c_str(), g_dataDir.c_str());
     gm::init();
@@ -690,18 +708,43 @@ bool Game::boot(const std::string& apkDir, const std::string& dataDir, int lcdW,
     setupLib();
     setupJni(cpu);
     Trans::init(dataDir + "/dict.bin");
-    std::filesystem::create_directories(dataDir + "/internal");
-    std::filesystem::create_directories(dataDir + "/external");
-    if (std::filesystem::exists("assets_override")) {
-        g_overrideDir = std::filesystem::absolute("assets_override").generic_string();
-    } else if (std::filesystem::exists(g_apkDir + "/assets_override")) {
-        g_overrideDir = (std::filesystem::path(g_apkDir) / "assets_override").generic_string();
-    } else if (std::filesystem::exists("../assets_override")) {
-        g_overrideDir = std::filesystem::absolute("../assets_override").generic_string();
+    std::error_code ec;
+    std::filesystem::create_directories(dataDir + "/internal", ec);
+    std::filesystem::create_directories(dataDir + "/external", ec);
+
+    std::string sep = (g_apkDir.empty() || g_apkDir.back() == '/') ? "" : "/";
+    std::string testPath = "assets_override/c/sp/imgcom/title.mgr";
+    FILE* testF = fopen(testPath.c_str(), "rb");
+    if (testF) {
+        fclose(testF);
+        g_overrideDir = "assets_override";
+    } else {
+        testPath = g_apkDir + sep + "assets_override/c/sp/imgcom/title.mgr";
+        testF = fopen(testPath.c_str(), "rb");
+        if (testF) {
+            fclose(testF);
+            g_overrideDir = g_apkDir + sep + "assets_override";
+        } else {
+            testPath = "../assets_override/c/sp/imgcom/title.mgr";
+            testF = fopen(testPath.c_str(), "rb");
+            if (testF) {
+                fclose(testF);
+                g_overrideDir = "../assets_override";
+            }
+        }
     }
-    std::string soPath = apkDir + "/libHeroesLore5.so";
-    if (!std::filesystem::exists(soPath)) soPath = apkDir + "/lib/armeabi/libHeroesLore5.so";
-    if (!elf_load(soPath, img, [this](const std::string& n) { return resolveImport(cpu, n); })) return false;
+
+    std::string soPath = apkDir + sep + "libHeroesLore5.so";
+    FILE* soF = fopen(soPath.c_str(), "rb");
+    if (!soF) {
+        soPath = apkDir + sep + "lib/armeabi/libHeroesLore5.so";
+        soF = fopen(soPath.c_str(), "rb");
+    }
+    if (soF) fclose(soF);
+    if (!elf_load(soPath, img, [this](const std::string& n) { return resolveImport(cpu, n); })) {
+        fprintf(stderr, "[boot] Failed to load ELF: %s\n", soPath.c_str());
+        return false;
+    }
     for (u32 f : img.initArray) { if (f && f != 0xFFFFFFFFu) cpu.call(f, {}); }
 
     { JObj o; o.k = 5; g_thiz = newObj(std::move(o)); }
