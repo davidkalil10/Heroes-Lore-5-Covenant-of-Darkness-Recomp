@@ -26,7 +26,9 @@ logic, and the SDL host button. `src/main.cpp` creates the window before boot to
 obtain its dimensions; Auto debounces resize events by 120 ms and recreates the
 streaming texture only when logical dimensions change. Touch input is mapped
 through the uniform destination rectangle; the host button consumes its gesture.
-Existing active game touch is released before changing the canvas.
+Existing active game touch is released before changing the canvas. The Android
+SDL window is resizable so SDLActivity permits both orientations, respecting
+the system rotation lock, rather than locking to its initial portrait dimensions.
 
 `Game::resizeViewport` in `src/hle/hle.cpp` uses the shipped ARM library's
 `nativeInitDisplay` export. It frees old texture metadata and framebuffer pixels,

@@ -377,7 +377,8 @@ int main(int argc, char** argv) {
 #ifdef __SWITCH__
         win=SDL_CreateWindow("Heroes Lore 5: Covenant of Darkness",0,0,1280,720,0);
 #elif defined(__ANDROID__)
-        win=SDL_CreateWindow("Heroes Lore 5: Covenant of Darkness",0,0,0,0,SDL_WINDOW_FULLSCREEN);
+        // Allow SDLActivity to follow device rotation and report the new surface size.
+        win=SDL_CreateWindow("Heroes Lore 5: Covenant of Darkness",0,0,0,0,SDL_WINDOW_FULLSCREEN|SDL_WINDOW_RESIZABLE);
 #else
         int windowW=availableW>0?availableW:(aspectMode==AspectMode::Native?lw*2:960);
         int windowH=availableH>0?availableH:(aspectMode==AspectMode::Native?lh*2:540);
