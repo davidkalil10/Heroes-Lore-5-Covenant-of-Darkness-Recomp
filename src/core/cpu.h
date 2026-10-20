@@ -28,6 +28,8 @@ struct Cpu {
     u32 arg(int i) const { return i < 4 ? r[i] : gm::r32(r[13] + 4 * (i - 4)); }
 
 private:
+    template<u32 pc, u32 ins> void hotStep();
+    bool tryHotBlock();
     bool cond(u32 c) const;
     u32 shiftImm(u32 v, u32 type, u32 amt, bool& c);
     u32 shiftReg(u32 v, u32 type, u32 amt, bool& c);

@@ -1,8 +1,37 @@
 # Heroes Lore 5 (Recomp) - Agent & Developer Guide
 
-This document is the authoritative engineering guide for **Heroes Lore 5: Knights of the Blue (영웅서기5: 칠흑의 이경)** native C++ recompilation project. It documents the architecture, boot flow, reverse engineering discoveries, network bypass, asset pipeline, translation system, gamepad support, widescreen viewport, and roadmap so that any AI agent or human engineer can seamlessly continue development.
+This document is the authoritative engineering guide for **Heroes Lore 5: Covenant of Darkness (영웅서기5: 칠흑의 이경)** native C++ recompilation project. It documents the architecture, boot flow, reverse engineering discoveries, network bypass, asset pipeline, translation system, gamepad support, widescreen viewport, and roadmap so that any AI agent or human engineer can seamlessly continue development.
 
 ---
+
+## Current integration — 2026-10-20
+
+The user has manually accepted the isolated Windows build as fluid, fast, and
+audible. Its runtime changes are now integrated into `src/`; the main project is
+the authoritative source. `codex_lab/` remains a local ignored experiment and
+backup, not a CI/release source. Read `docs/HANDOFF.md` and `docs/RUNTIME.md` before
+changing the CPU, clocks, audio, build rules, or VFS hooks.
+
+- CPU: seven opcode-guarded statically compiled ARM regions in
+  `src/core/hot_blocks.inc`. Regenerate with `python tools/generate_hot_blocks.py`;
+  do not hand-edit the generated decoder or alter its ARM semantics independently.
+- Audio: `src/audio/audio.cpp` provides SDL2 mixing and Ogg/MP3 decoding. Do not
+  restore the silent JNI stubs or require SDL2_mixer. `stb_vorbis.c` is included by
+  `audio.cpp`, so it must not be compiled as a separate C translation unit.
+- Switch `SOURCES` must include `src/audio`; `CFILES` excludes `stb_vorbis.c`.
+  Desktop and Android CMake recursively collect C++ sources, not the decoder C file.
+- Timing: retain fractional real milliseconds and avoid the old >50 ms ->16 ms
+  rule. The manual limiter is skipped when renderer vsync is active.
+- Diagnostics: `HL5_NO_AOT`, `HL5_NO_VFS_CACHE`, `HL5_VERIFY_AOT`,
+  `HL5_VERIFY_VFS`, `HL5_FIXED_STEP_MS`, `HL5_AUDIO_TEST`, `HL5_CAPTURE_AUDIO`,
+  `HL5_PROF`, and `HL5_BENCH` are documented in `docs/RUNTIME.md`.
+- Required runtime validation after relevant changes:
+  `python tools/verify_runtime.py --exe build/hl5.exe` (Linux: `build/hl5`).
+  It uses disposable saves and dummy audio, compares 11 full frames, checks 14
+  ARM states and VFS results, and confirms nonzero audio output. CI runs it on
+  Windows/Linux. Do not claim Android/Switch gameplay validation from a PC test.
+- Local preexisting CPU blitter/input changes were included in the accepted
+  snapshot and are intentionally preserved in this integration.
 
 ## 1. Project Overview & Target Platforms
 
@@ -221,8 +250,8 @@ The project includes an end-to-end automated pipeline:
 - [ ] **Cloud Saves & Cross-Platform Save Compatibility:** Save slot sync and cloud backup format compatible with other Heroes Lore ports.
 
 ### Milestone 3: Cross-Platform Ports
-- [ ] **Nintendo Switch:** Port engine using libnx + SDL2.
-- [ ] **Android ARM64:** Native Android NDK port with modern touch controls.
+- [x] **Nintendo Switch:** libnx + SDL2 build pipeline available; validate the new shared runtime on hardware.
+- [x] **Android ARM64:** Android NDK build pipeline and touch controls available; validate the new shared runtime on hardware.
 
 ---
 

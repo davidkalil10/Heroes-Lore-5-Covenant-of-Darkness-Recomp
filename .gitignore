@@ -59,3 +59,10 @@ Desktop.ini
 __pycache__/
 *.pyc
 scratch/
+
+# Local performance lab and generated diagnostics (not release inputs)
+/codex_lab/
+/prof.txt
+/frame_times.csv
+/scratch_dump/
+/scratch_new/

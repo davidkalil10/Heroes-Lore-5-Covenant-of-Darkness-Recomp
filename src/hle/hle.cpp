@@ -1,4 +1,5 @@
 #include "hle.h"
+#include "../audio/audio.h"
 #include "../core/trans.h"
 #include <algorithm>
 #include <cmath>
@@ -115,6 +116,39 @@ static std::string vfsPath() {
     if (f2) { fclose(f2); return p2; }
 
     return p1;
+}
+
+// Index immutable VFS metadata once instead of reopening and scanning the archive
+// for every asset lookup. Preserve first-match hash semantics and relative offsets.
+bool fastVfsLookup(u32 manager,u32 name,u32 outOffset,u32& size) {
+    if(getenv("HL5_NO_VFS_CACHE")) return false;
+    struct Entry { u32 offset,size; };
+    static std::map<u32,Entry> index;
+    static u32 indexedStart=~0u,indexedLength=0;
+    u32 start=gm::r32(manager+0x614),length=gm::r32(manager+0x618);
+    if(start!=indexedStart || length!=indexedLength) {
+        FILE* f=fopen(vfsPath().c_str(),"rb");if(!f)return false;
+        if(fseek(f,0,SEEK_END)!=0) {fclose(f);return false;}
+        long fileLength=ftell(f);
+        if(fileLength<0 || start>(u64)fileLength || length>(u64)fileLength-start || length>64*1024*1024) {fclose(f);return false;}
+        std::vector<u8> bytes(length);fseek(f,start,SEEK_SET);
+        size_t n=fread(bytes.data(),1,length,f);fclose(f);if(n!=length)return false;
+        std::map<u32,Entry> next;
+        u32 pos=0;
+        while(pos+8<=length) {
+            u32 hash=0,entrySize=0;memcpy(&hash,bytes.data()+pos,4);memcpy(&entrySize,bytes.data()+pos+4,4);
+            if(entrySize>length-pos-8)return false;
+            next.emplace(hash,Entry{pos+8,entrySize});pos+=8+entrySize;
+        }
+        if(pos!=length)return false;
+        index.swap(next);indexedStart=start;indexedLength=length;
+        fprintf(stderr,"[vfs-cache] indexed %zu resources (%u bytes)\n",index.size(),length);
+    }
+    u32 hash=5381;for(unsigned char c:gm::cstr(name))hash=hash*33+c;
+    auto it=index.find(hash);
+    size=~0u;
+    if(it!=index.end()) {size=it->second.size;gm::w32(outOffset,it->second.offset);}
+    return true;
 }
 
 // ---------------------------------------------------------------- GLES1 software compositor
@@ -330,7 +364,20 @@ static u32 javaStatic(const std::string& name, const std::string& sig, std::vect
     if (name == "getIMSI") return stringObj("450000000000000");
     if (name == "getMin") return stringObj("00000000000");
     if (name == "totalMemory" || name == "freeMemory") return 0x10000000;
-    if (name == "getSoundVolume" || name == "getMusicVolume" || name == "getVolume") return 5;
+    if (name == "putMusicClip" || name == "putSoundClip") {
+        if(a.size()<3) return (u32)-1;
+        return Audio::load(vfsPath(),a[0],a[1],a[2],name=="putMusicClip");
+    }
+    if (name.rfind("clipPlay",0)==0) return a.size()>1?Audio::play(a[0],a[1]!=0):(u32)-1;
+    if (name.rfind("clipStop",0)==0) return a.empty()?(u32)-1:Audio::stop(a[0]);
+    if (name.rfind("clipFree",0)==0) return a.empty()?(u32)-1:Audio::free(a[0]);
+    if (name.rfind("clipPause",0)==0) return a.empty()?(u32)-1:Audio::pause(a[0]);
+    if (name.rfind("clipResume",0)==0) return a.empty()?(u32)-1:Audio::resume(a[0]);
+    if (name=="setMusicVolume" || name=="setSoundVolume" || name=="setVolume") {
+        if(!a.empty()) { Audio::volume(name=="setMusicVolume",(int)a[0]); if(name=="setVolume") Audio::volume(true,(int)a[0]); }
+        return 0;
+    }
+    if (name == "getSoundVolume" || name == "getMusicVolume" || name == "getVolume") return Audio::volume(name=="getMusicVolume");
     if (name == "initMTX" || name == "requestMTX" || name == "phnCallPlace") return (u32)-1;
     if (name == "exitApp") { G->quit = true; return 0; }
     if (name.rfind("clip", 0) == 0 || name == "putSoundClip" || name == "putMusicClip" || name == "putClip" || name == "getClipStatus" ||
@@ -794,14 +841,17 @@ bool Game::boot(const std::string& apkDir, const std::string& dataDir, int lcdW,
 }
 
 void Game::frame() {
-    static auto s_lastTime = std::chrono::steady_clock::now();
-    static bool s_first = true;
-    if (s_first) { s_lastTime = std::chrono::steady_clock::now(); s_first = false; }
+    static auto lastTime = std::chrono::steady_clock::now();
+    static double remainderMs = 0;
     auto now = std::chrono::steady_clock::now();
-    auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(now - s_lastTime).count();
-    s_lastTime = now;
-    if (elapsedMs <= 0 || elapsedMs > 50) elapsedMs = 16;
-    g_simTimeMs += elapsedMs;
+    double elapsedMs = std::chrono::duration<double,std::milli>(now-lastTime).count();
+    lastTime=now;
+    if(const char* fixed=getenv("HL5_FIXED_STEP_MS")) elapsedMs=std::clamp(atoi(fixed),1,250);
+    else elapsedMs=std::min(elapsedMs,250.0);
+    remainderMs+=elapsedMs;
+    auto wholeMs=(u64)remainderMs;
+    remainderMs-=wholeMs;
+    g_simTimeMs+=wholeMs;
     cpu.call(sym("Java_co_kr_eamobile_CletEntry_nativeLoop"), {g_env, g_thiz});
 }
 void Game::key(int type, int k) { cpu.call(sym("Java_co_kr_eamobile_CletEntry_nativeKeyHandleEvent"), {g_env, g_thiz, (u32)type, (u32)k, 0}); }

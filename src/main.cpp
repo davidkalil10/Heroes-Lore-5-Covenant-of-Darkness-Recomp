@@ -1,6 +1,7 @@
 // HL5 recomp - Windows host entry point (SDL2). Milestone 0 bootstrap: ARM interpreter + HLE.
 #include "hle/hle.h"
 #include <SDL.h>
+#include "audio/audio.h"
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
@@ -259,7 +260,9 @@ struct DirectionManager {
 static FILE* s_bootLog = nullptr;
 #endif
 
+extern bool g_prof; extern std::vector<u32> g_profHist;
 int main(int argc, char** argv) {
+    if (getenv("HL5_PROF")) g_prof = true;
 #ifdef __SWITCH__
     mkdir("sdmc:/switch", 0777);
     mkdir("sdmc:/switch/heroes_lore_5", 0777);
@@ -339,6 +342,8 @@ int main(int argc, char** argv) {
         std::filesystem::create_directories(dumpDir);
         dumpDir = std::filesystem::absolute(dumpDir).generic_string();
     }
+    auto bootStart = std::chrono::steady_clock::now();
+    if (!headless || getenv("HL5_AUDIO_TEST")) Audio::init();
     static Game game;
     game.verbose = verbose;
     LOGI("[Init] Calling Game::boot(apk=%s, data=%s)...\n", apk.c_str(), data.c_str());
@@ -348,10 +353,12 @@ int main(int argc, char** argv) {
     }
     LOGI("[Init] Game::boot OK, screen size: %dx%d\n", game.screen.w, game.screen.h);
 
+    LOGI("[bench] boot_ms=%.3f\n", std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now()-bootStart).count());
     SDL_Window* win = nullptr; SDL_Renderer* ren = nullptr; SDL_Texture* tex = nullptr;
     std::vector<SDL_GameController*> controllers;
     DirectionManager dirMgr;
     bool isFullscreen = false;
+    bool rendererVsync = false;
     bool aspectFit = true; // true: 3:5 letterboxed, false: stretched fill
 
     auto openController = [&](int id) {
@@ -430,7 +437,9 @@ int main(int argc, char** argv) {
             LOGE("[SDL] SDL_CreateRenderer failed: %s\n", SDL_GetError());
             return 1;
         }
-        LOGI("[SDL] Renderer created successfully\n");
+        SDL_RendererInfo rendererInfo{};
+        if(SDL_GetRendererInfo(ren,&rendererInfo)==0) rendererVsync=(rendererInfo.flags & SDL_RENDERER_PRESENTVSYNC)!=0;
+        LOGI("[SDL] Renderer created successfully (vsync=%d)\n",rendererVsync);
         tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, W, H);
         if (!tex) {
             LOGE("[SDL] SDL_CreateTexture ARGB8888 failed: %s, trying ABGR8888...\n", SDL_GetError());
@@ -444,6 +453,8 @@ int main(int argc, char** argv) {
 
         for (int i = 0; i < SDL_NumJoysticks(); i++) openController(i);
     }
+    const bool benchmark = headless || getenv("HL5_BENCH") != nullptr;
+    std::vector<double> frameTimes;
     auto t0 = std::chrono::steady_clock::now();
 #ifdef __SWITCH__
     for (int f = 0; appletMainLoop() && !game.quit && (frames < 0 || f < frames); f++) {
@@ -532,7 +543,9 @@ int main(int argc, char** argv) {
             int k = scriptKeys[f - 2];
             game.key(EV_KEY_RELEASE, k);
         }
+        auto loopStart = std::chrono::steady_clock::now();
         game.frame();
+        if (benchmark) frameTimes.push_back(std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now()-loopStart).count());
         if (!dumpDir.empty() && dumpEvery > 0 && (f % dumpEvery == 0)) dumpBmp(dumpDir + "/frame_" + std::to_string(f) + ".bmp", game.screen);
         if (!headless && game.screen.w > 0) {
             int winW = 0, winH = 0;
@@ -549,7 +562,7 @@ int main(int argc, char** argv) {
             SDL_RenderCopy(ren, tex, nullptr, &dst);
             SDL_RenderPresent(ren);
         }
-        if (!headless) {
+        if (!headless && !rendererVsync) {
             auto frameElapsedUs = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - frameStart).count();
             if (frameElapsedUs < 16666) {
                 auto remUs = 16666 - frameElapsedUs;
@@ -566,6 +579,18 @@ int main(int argc, char** argv) {
             LOGI("[run] frame %d t=%.1fs icount=%.1fM draws=%llu screen=%dx%d\n", f, s, game.cpu.icount / 1e6, (unsigned long long)game.screen.draws, game.screen.w, game.screen.h);
         }
     }
+    if (!frameTimes.empty()) {
+        FILE* tf = fopen("frame_times.csv", "w");
+        if (tf) { fprintf(tf, "frame,loop_ms\n"); for (size_t i=0;i<frameTimes.size();++i) fprintf(tf,"%zu,%.6f\n",i,frameTimes[i]); fclose(tf); }
+        auto sorted = frameTimes; std::sort(sorted.begin(), sorted.end());
+        double total=0; for(double ms: sorted) total+=ms;
+        LOGI("[bench] frames=%zu mean_ms=%.3f p50_ms=%.3f p95_ms=%.3f max_ms=%.3f\n", sorted.size(),total/sorted.size(),sorted[sorted.size()/2],sorted[(sorted.size()-1)*95/100],sorted.back());
+    }
+    if (g_prof) {
+        FILE* pf = fopen("prof.txt", "w");
+        for (size_t i = 0; i < g_profHist.size(); i++) if (g_profHist[i]) fprintf(pf, "%08x %u\n", (unsigned)(0x00100000 + i * 4), g_profHist[i]);
+        fclose(pf);
+    }
     if (!dumpDir.empty()) dumpBmp(dumpDir + "/final.bmp", game.screen);
     {
         std::map<u32, int> colorCounts;
@@ -575,6 +600,7 @@ int main(int argc, char** argv) {
     for (auto* c : controllers) {
         if (c) SDL_GameControllerClose(c);
     }
+    Audio::shutdown();
     if (!headless) SDL_Quit();
 #ifdef __SWITCH__
     romfsExit();

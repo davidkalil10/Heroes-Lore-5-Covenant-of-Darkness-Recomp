@@ -1,6 +1,40 @@
 #include "cpu.h"
 #include "trans.h"
 extern std::string g_overrideDir;
+extern bool fastVfsLookup(u32 manager,u32 name,u32 outOffset,u32& size);
+// Tinted/alpha-mixed RGB565 sprite pixel used by the engine's palettized sprite blitters (0x59664 / 0x59d68).
+// lutBase = guest address of the colour-adjust table, tint = (level << 5), a = {aR, aG, aB}.
+static inline u16 spriteBlendPixel(u32 c, u32 dst, u32 lutBase, u32 tint, u32 aR, u32 aG, u32 aB) {
+    u32 sR = c >> 11, sG = (c & 0x7e0) >> 6, sB = c & 0x1f;
+    u32 dR = dst >> 11, dG = (dst & 0x7e0) >> 6, dB = dst & 0x1f;
+    u32 lR = gm::r8(lutBase + 0x6d + ((tint + sR) << 5) + dR);
+    u32 lG = gm::r8(lutBase + 0x6d + ((tint + sG) << 5) + dG) << 1;
+    u32 lB = gm::r8(lutBase + 0x6d + ((tint + sB) << 5) + dB);
+    u32 R, G, B;
+    if (aR > 0x1f) { R = lR; G = lG; B = lB; }
+    else {
+        R = (aR * lR + (32 - aR) * dR) >> 5;
+        G = (aG * lG + (64 - aG) * (dG << 1)) >> 6;
+        B = (aB * lB + (32 - aB) * dB) >> 5;
+    }
+    return (u16)((B & 0x1f) | (R << 11) | ((G << 5) & 0x7e0));
+}
+
+bool g_prof = false;
+std::vector<u32> g_profHist(0x400000);
+
+// Fast "is this PC one of our HLE hooks" test (avoids a sparse switch on every instruction).
+static std::vector<u8> g_hookMap;
+static inline bool isHook(u32 pc) {
+    if (g_hookMap.empty()) {
+        g_hookMap.assign(0x400000, 0);
+        static const u32 pcs[] = {0x1417a4, 0x11b348, 0x11feac, 0x11febc, 0x4e03c, 0x4d9f0, 0xc3bbc, 0xc42a0,
+                                  0x14c7e4, 0x418dc, 0x41878, 0x41818, 0x41d78, 0x41940, 0x144db8, 0x145754, 0x59664, 0x59d68, 0x4e7e4, 0x5371c, 0x538c8};
+        for (u32 p : pcs) g_hookMap[p >> 2] = 1;
+    }
+    u32 o = pc - 0x00100000;
+    return o < 0x1000000 && g_hookMap[o >> 2];
+}
 
 u32 Cpu::addTrap(const std::string& name, TrapFn fn) {
     traps.push_back(std::move(fn));
@@ -100,7 +134,160 @@ void Cpu::step() {
         return;
     }
     u32 ins = gm::r32(pc);
-    switch (pc) {
+    if (g_prof) g_profHist[(pc - 0x00100000) >> 2]++;
+    if (isHook(pc)) switch (pc) {
+        case 0x24c7e4: {
+            static bool oracle=false;
+            if(oracle) break;
+            u32 size;
+            u32 manager=r[0],name=r[1],out=r[2];
+            u32 previous=gm::r32(out);
+            if(fastVfsLookup(manager,name,out,size)) {
+                if(getenv("HL5_VERIFY_VFS")) {
+                    u32 offset=gm::r32(out);gm::w32(out,previous);
+                    oracle=true;u32 expected=call(pc,{manager,name,out});oracle=false;
+                    if(size!=expected || offset!=gm::r32(out)) {fprintf(stderr,"[vfs-cache] DIFFERENTIAL FAILURE %s\n",gm::cstr(name).c_str());abort();}
+                    static int verified=0;if(verified++<5)fprintf(stderr,"[vfs-cache] differential PASS %s\n",gm::cstr(name).c_str());
+                }
+                r[0]=size;r[15]=r[14];return;
+            }
+            break;
+        }
+        case 0x00100000 + 0x144db8: {  // engine blit(dst,src,clip): per-row loop of the 16bpp copy path, done natively
+            u32 sp = r[13];
+            u32 srcS = r[7], dstS = r[12];
+            u32 clip = gm::r32(sp + 0x70);
+            s32 w = (s32)r[11];
+            if (w <= 0 || gm::r32(sp + 0x20) != 0x10 || (s32)gm::r32(clip + 0x20) <= 0xfe || gm::r32(clip + 0x2c) != 0) break;
+            s32 sy = (s32)r[9], dy = (s32)gm::r32(sp + 4), dx = (s32)gm::r32(sp + 0xc), sx = (s32)gm::r32(sp + 0x68);
+            s32 srcW = (s32)gm::r32(srcS), srcH = (s32)gm::r32(srcS + 4), srcPitch = (s32)gm::r32(srcS + 8);
+            s32 dstW = (s32)gm::r32(dstS), dstH = (s32)gm::r32(dstS + 4), dstPitch = (s32)gm::r32(dstS + 8);
+            s32 c1 = (s32)gm::r32(clip + 4), c2 = (s32)gm::r32(clip + 8), c3 = (s32)gm::r32(clip + 0xc), c4 = (s32)gm::r32(clip + 0x10);
+            bool useKey = (gm::r32(sp + 0x2c) & 0xFF) != 0;
+            u32 key = gm::r32(clip + 0x1c);
+            u32 dstData = gm::r32(sp + 0x24), srcData = gm::r32(sp + 0x28);
+            if (!(srcH > sy && dstH > dy && sy >= 0 && dy >= 0 && c2 <= dy && c4 > dy)) { /* whole row skipped */ }
+            else {
+                u32 srcRow = srcData + (u32)(sy * srcPitch), dstRow = dstData + (u32)(dy * dstPitch);
+                for (s32 x = 0; x < w; x++) {
+                    s32 px = sx + x, qx = dx + x;
+                    if (srcW <= px || dstW <= qx || px < 0 || qx < 0 || c1 > qx || c3 <= qx) continue;
+                    u32 v = gm::r16(srcRow + (u32)px * 2);
+                    if (useKey && v == key) continue;
+                    gm::w16(dstRow + (u32)qx * 2, (u16)v);
+                }
+            }
+            icount += 14 + (u64)w * 38;
+            r[4] = (u32)w; r[15] = 0x00100000 + 0x144ea4;
+            return;
+        }
+        case 0x00100000 + 0x4e7e4: {  // solid-colour alpha overlay row on a 16bpp surface, done natively
+            s32 w = (s32)r[6];
+            if (w <= 0) break;
+            u32 inv = r[4], addB = r[8], addG = r[10], addR = r[9], p = r[5];
+            for (s32 j = 0; j < w; j++, p += 2) {
+                u32 v = gm::r16(p);
+                u32 g = ((v & 0x7e0) >> 3), b8 = (v << 3) & 0xff, r8 = (v & 0xf800) >> 8;
+                u32 G = ((inv * g + addG) >> 5) & 0x7e0;
+                u32 R = (inv * r8 + addR) & 0xf800;
+                u32 B = ((inv * b8 + addB) << 16) >> 27;
+                gm::w16(r[5] + (u32)j * 2, (u16)(R | G | B));
+            }
+            icount += (u64)w * 20 + 4;
+            r[15] = 0x00100000 + 0x4e848;
+            return;
+        }
+        case 0x00100000 + 0x5371c: {  // unTinted 8bpp palettized sprite row with colour key, native
+            s32 i = (s32)r[2], cnt = (s32)r[12];
+            if (i >= cnt) break;
+            u32 srcP = r[1] + r[10], pal = r[7], key = r[11], d = r[0];
+            for (s32 k = i; k < cnt; k++, d += 2) {
+                u32 c = gm::r16(pal + (u32)gm::r8(srcP + (u32)k) * 2);
+                if (c != key) gm::w16(d, (u16)c);
+            }
+            icount += (u64)(cnt - i) * 10;
+            r[0] = d; r[2] = (u32)cnt;
+            r[15] = 0x00100000 + 0x53744;
+            return;
+        }
+        case 0x00100000 + 0x538c8: {  // unTinted 4bpp palettized sprite row with colour key, native
+            s32 i = (s32)r[3], cnt = (s32)r[4];
+            if (i >= cnt) break;
+            u32 srcP = r[10] + r[8], pal = r[7], key = r[12], d1 = r[1], d0 = r[0];
+            for (s32 k = i; k < cnt; k++, d1 += 4, d0 += 4) {
+                u32 b = gm::r8(srcP + (u32)k);
+                u32 c1 = gm::r16(pal + (b >> 4) * 2);
+                if (c1 != key) gm::w16(d1, (u16)c1);
+                u32 c2 = gm::r16(pal + (b & 0xf) * 2);
+                if (c2 != key) gm::w16(d0, (u16)c2);
+            }
+            icount += (u64)(cnt - i) * 17;
+            r[1] = d1; r[0] = d0; r[3] = (u32)cnt;
+            r[15] = 0x00100000 + 0x5390c;
+            return;
+        }
+        case 0x00100000 + 0x59664: {  // 4bpp palettized sprite row (2 px per source byte), tint LUT + alpha, done natively
+            u32 sp = r[13];
+            s32 i = (s32)r[2], cnt = (s32)gm::r32(sp + 0x34);
+            if (i >= cnt) break;
+            u32 srcP = gm::r32(sp + 0x38) + gm::r32(sp + 0x3c);
+            u32 pal = r[6], key = r[8], tint = r[3], lut = r[4];
+            u32 aR = gm::r8(sp + 0xac), aG = gm::r8(sp + 0xad), aB = gm::r8(sp + 0xae);
+            u32 d0 = r[1];
+            for (s32 k = i; k < cnt; k++, d0 += 4) {
+                u32 b = gm::r8(srcP + (u32)k);
+                u32 c = gm::r16(pal + (b >> 4) * 2);
+                if (c != key) gm::w16(d0, spriteBlendPixel(c, gm::r16(d0), lut, tint, aR, aG, aB));
+                c = gm::r16(pal + (b & 0xf) * 2);
+                if (c != key) gm::w16(d0 + 2, spriteBlendPixel(c, gm::r16(d0 + 2), lut, tint, aR, aG, aB));
+            }
+            icount += (u64)(cnt - i) * 80;
+            r[1] = d0; r[0] = d0 + 2; r[2] = (u32)cnt; r[11] = (u32)cnt;
+            r[15] = 0x00100000 + 0x598a8;
+            return;
+        }
+        case 0x00100000 + 0x59d68: {  // 8bpp palettized sprite row, tint LUT + alpha, done natively
+            u32 sp = r[13];
+            s32 i = (s32)r[3], cnt = (s32)r[11];
+            if (i >= cnt) break;
+            u32 srcP = gm::r32(sp + 0x68) + gm::r32(sp + 0x3c);
+            u32 pal = gm::r32(sp + 0x34), key = gm::r32(sp + 0x38), tint = r[0], lut = r[4];
+            u32 aR = gm::r8(sp + 0xac), aG = gm::r8(sp + 0xad), aB = gm::r8(sp + 0xae);
+            u32 d = r[2];
+            for (s32 k = i; k < cnt; k++, d += 2) {
+                u32 c = gm::r16(pal + (u32)gm::r8(srcP + (u32)k) * 2);
+                if (c != key) gm::w16(d, spriteBlendPixel(c, gm::r16(d), lut, tint, aR, aG, aB));
+            }
+            u32 n = (u32)(cnt - i);
+            icount += (u64)n * 51;
+            r[12] += n; r[2] = d; r[3] = (u32)cnt;
+            r[1] = gm::r32(sp + 0x68);
+            r[15] = 0x00100000 + 0x59e84;
+            return;
+        }
+        case 0x00100000 + 0x145754: {  // engine fillrect(surface, clip): per-row loop natively
+            u32 sp = r[13];
+            u32 clip = r[6];
+            u32 bpp = r[11];
+            if ((bpp != 0x10 && bpp != 0x20) || (s32)gm::r32(clip + 0x20) <= 0xfe || gm::r32(clip + 0x2c) != 0) break;
+            u32 surf = gm::r32(sp + 0x10), data = gm::r32(sp + 0x14);
+            s32 pitch = (s32)gm::r32(surf + 8);
+            s32 y = (s32)r[10], x0 = (s32)r[9], x1 = (s32)r[8];
+            s32 c1 = (s32)gm::r32(clip + 4), c2 = (s32)gm::r32(clip + 8), c3 = (s32)gm::r32(clip + 0xc), c4 = (s32)gm::r32(clip + 0x10);
+            u32 color = gm::r32(clip + 0x14);
+            if (x0 < x1 && c2 <= y && c4 > y) {
+                u32 row = data + (u32)(y * pitch);
+                for (s32 x = x0; x < x1; x++) {
+                    if (c1 > x || c3 <= x) continue;
+                    if (bpp == 0x10) gm::w16(row + (u32)x * 2, (u16)color);
+                    else gm::w32(row + (u32)x * 4, color);
+                }
+            }
+            icount += 10 + (u64)(x1 > x0 ? x1 - x0 : 0) * 30;
+            r[15] = 0x00100000 + 0x1457bc;
+            return;
+        }
+
         case 0x00100000 + 0x1417a4: { // StaticUtil::LoadRes(char* path, int* outSize)
             u32 pathPtr = r[0];
             u32 outSizePtr = r[1];
@@ -214,7 +401,7 @@ void Cpu::step() {
         case 0:
         case 1: {
             bool imm = (ins >> 25) & 1;
-            if (!imm) {
+            if (!imm && ((ins & 0x90) == 0x90 || (ins & 0x01900000) == 0x01000000)) {
                 if ((ins & 0x0FFFFFF0) == 0x012FFF10) {  // BX
                     u32 t = rd(ins & 15);
                     if (t & 1) undef(pc, ins, "BX to Thumb unsupported");
@@ -312,7 +499,7 @@ void Cpu::step() {
                     if ((ins >> 19) & 1) { u32 v = rd(ins & 15); N = v >> 31; Z = (v >> 30) & 1; C = (v >> 29) & 1; V = (v >> 28) & 1; }
                     r[15] = npc; return;
                 }
-            } else {
+            } else if (imm && (ins & 0x01900000) == 0x01000000) {
                 if ((ins & 0x0FB0F000) == 0x0320F000) {  // MSR imm / hints (NOP)
                     if ((ins & 0x0FB00000) == 0x03200000 && ((ins >> 19) & 1) && ((ins >> 22) & 1) == 0) {
                         u32 v = ror32(ins & 0xFF, ((ins >> 8) & 15) * 2);
@@ -437,8 +624,19 @@ void Cpu::step() {
     }
 }
 
+
+
+
+
+
+#include "hot_blocks.inc"
+
 void Cpu::run() {
-    while (r[15] != RET_MAGIC) step();
+    static const std::vector<u8> entryMap=[] { std::vector<u8> map(0x200000/4,0); map[(0x150208-gm::LOAD_BASE)>>2]=1; map[(0x156aa8-gm::LOAD_BASE)>>2]=1; map[(0x133f04-gm::LOAD_BASE)>>2]=1; map[(0x154dc8-gm::LOAD_BASE)>>2]=1; map[(0x13bea4-gm::LOAD_BASE)>>2]=1; map[(0x14eba0-gm::LOAD_BASE)>>2]=1; map[(0x151ae8-gm::LOAD_BASE)>>2]=1; return map; }();
+    while (r[15] != RET_MAGIC) {
+        u32 offset=r[15]-gm::LOAD_BASE;
+        if (offset>=0x200000 || !entryMap[offset>>2] || !tryHotBlock()) step();
+    }
 }
 
 u32 Cpu::call(u32 addr, std::initializer_list<u32> args) { return callv(addr, std::vector<u32>(args)); }

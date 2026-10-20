@@ -8,6 +8,37 @@ Projeto de recompilação e port nativo de **Heroes Lore 5: Covenant of Darkness
 
 ---
 
+## Atualização de execução e áudio — 20/10/2026
+
+A versão validada pelo autor no PC foi integrada ao código principal: execução
+fluida, música e efeitos sonoros funcionando. Windows, Linux, Android e Switch
+compartilham as correções de CPU, áudio SDL2 e acesso aos recursos.
+
+- Sete trechos ARM de desenho e decodificação são recompilados estaticamente para
+  C++, com validação de opcodes e retorno ao interpretador se o binário mudar.
+- Música e efeitos Ogg/MP3 usam mixer SDL2 próprio, sem dependência de SDL2_mixer.
+- Um índice dos recursos VFS evita reabrir e percorrer o arquivo em cada consulta.
+- O relógio usa tempo real acumulado; quadros lentos deixam de virar câmera lenta.
+
+No benchmark de PC de 1.200 loops, três repetições por versão, o tempo médio caiu
+de **9,092 para 2,904 ms (3,13x)**; o percentil 95 caiu de **49,740 para 15,219 ms**.
+Esses números medem processamento do loop, não FPS garantido em outras plataformas.
+Android e Switch precisam de novos testes nos aparelhos com os artefatos do Actions.
+
+O Actions verifica Windows/Linux contra o interpretador original antes de empacotar:
+14 comparações de estado ARM, consultas VFS, 11 imagens idênticas e sinal de áudio.
+Para reproduzir depois de compilar:
+
+```bash
+python tools/verify_runtime.py --exe build/hl5.exe
+# Linux: --exe build/hl5
+```
+
+Detalhes de arquitetura e diagnóstico: [docs/RUNTIME.md](docs/RUNTIME.md).
+Continuidade entre IAs: [docs/HANDOFF.md](docs/HANDOFF.md).
+
+---
+
 ## 🎮 Controles
 
 ### Teclado (PC / Linux)
@@ -46,7 +77,7 @@ Projeto de recompilação e port nativo de **Heroes Lore 5: Covenant of Darkness
 ### Windows Standalone (Local)
 1. Navegue até a pasta `dist/`.
 2. Execute `hl5.exe`.
-3. O jogo iniciará em 60 FPS com os patches de tradução em inglês carregados.
+3. O jogo iniciará com tradução em inglês, áudio SDL2 e os trechos ARM otimizados.
 
 ### Builds Automatizadas (GitHub Actions)
 A cada push na branch `main` ou criação de tags `v*`, o GitHub Actions compila automaticamente para:
