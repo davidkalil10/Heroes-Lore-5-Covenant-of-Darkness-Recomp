@@ -58,7 +58,7 @@ def collect():
     for name in ('service_ui.cpp','services.cpp'):
         text=(ROOT/'src'/name).read_text(encoding='utf-8')
         for phrase in re.findall(r'"([^"\n\\]+)"',text):
-            if re.search(r'[A-Za-z]+ [A-Za-z]',phrase) and not any(x in phrase for x in ('https:', '#include','std::','/','_')):source.add(phrase)
+            if not phrase.startswith('[') and re.search(r'[A-Za-z]+ [A-Za-z]',phrase) and not any(x in phrase for x in ('https:', '#include','std::','/','_')):source.add(phrase)
     source.update(SEEDS)
     phrases=set()
     for text in source:

@@ -138,7 +138,7 @@ static std::string translateCompound(const std::string& text) {
     return result;
 }
 
-u32 translatePtr(u32 strPtr, int maxLen) {
+u32 translatePtr(u32 strPtr, int maxLen, Locale::UiText context) {
     if (strPtr < 0x1000 || strPtr >= gm::MEM_SIZE) return strPtr;
 
     std::string orig = gm::cstr(strPtr);
@@ -154,14 +154,14 @@ u32 translatePtr(u32 strPtr, int maxLen) {
     std::string trans=korean?translateCompound(orig):orig;
     if(trans.size()<40 && (trans.find("1.1.0")!=std::string::npos)) {
         trans="v"+std::string(services::Version);
-    } else trans=Locale::text(trans);
+    } else trans=Locale::uiText(trans,context);
 
     // If it's already English and within maxLen (or maxLen not set), return as is
     if (trans==orig && !korean && (maxLen <= 0 || (int)orig.size() <= maxLen)) {
         return strPtr;
     }
 
-    std::string key = Locale::language()+":"+orig+"@len"+std::to_string(maxLen);
+    std::string key = Locale::language()+":"+orig+"@len"+std::to_string(maxLen)+"@ui"+std::to_string(int(context));
 
     auto itCache = s_guestCache.find(key);
     if (itCache != s_guestCache.end()) return itCache->second;

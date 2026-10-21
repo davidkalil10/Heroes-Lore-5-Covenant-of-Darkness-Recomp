@@ -2,10 +2,10 @@
 #include "trans.h"
 extern std::string g_overrideDir;
 extern void refreshViewportMap(Cpu& cpu);
-extern void notifyPortSettings();
 extern bool handleLatinFontHook(Cpu&,u32);
 extern void beginBoundedText(Cpu&);
 extern void beginCoreText(Cpu&);
+extern bool fitPortLabel(Cpu&,u32,int);
 extern void endCoreText();
 extern void endBoundedText();
 extern void notifyTitlePaint();
@@ -39,7 +39,7 @@ static inline bool isHook(u32 pc) {
     if (g_hookMap.empty()) {
         g_hookMap.assign(0x400000, 0);
         static const u32 pcs[] = {0x1417a4, 0x11b348, 0x11feac, 0x11febc, 0x4e03c, 0x4d9f0, 0xc3bbc, 0xc42a0,
-                                  0x41334,0x41470,0x42838,0x11d4b0,0x11db18,0x41a94,0x41c64,0x41510,0x40ee8,0x40f6c,0x4178c,0x4170c,0x3cf00,0x41320,0x4126c,0x41b00, 0x11a1ec, 0x6afd0, 0xb129c, 0x14c7e4, 0x418dc, 0x41878, 0x41818, 0x41d78, 0x41940, 0x144db8, 0x145754, 0x59664, 0x59d68, 0x4e7e4, 0x5371c, 0x538c8};
+                                  0x41334,0x41470,0x42838,0x11d4b0,0x11db18,0x41a94,0x41c64,0x41510,0x40ee8,0x40f6c,0x4178c,0x4170c,0x3cf00,0x41320,0x4126c,0x41b00, 0x6afd0, 0xb129c, 0x14c7e4, 0x418dc, 0x41878, 0x41818, 0x41d78, 0x41940, 0x144db8, 0x145754, 0x59664, 0x59d68, 0x4e7e4, 0x5371c, 0x538c8};
         for (u32 p : pcs) g_hookMap[p >> 2] = 1;
     }
     u32 o = pc - 0x00100000;
@@ -155,9 +155,6 @@ void Cpu::step() {
         case 0x140ee8:case 0x140f6c:case 0x14178c:case 0x14170c:
         case 0x13cf00:case 0x141320:case 0x14126c:
             if(handleLatinFontHook(*this,pc))return;
-            break;
-        case 0x21a1ec: // StateMainMenu::DrawOption: expose host Settings alongside original options.
-            notifyPortSettings();
             break;
         case 0x16afd0: // EventProc::Event_DialogWindow: reflow a live message after resizing.
             refreshViewportDialog(*this);
@@ -399,7 +396,15 @@ void Cpu::step() {
         case 0x00100000 + 0x41818:
         case 0x00100000 + 0x41d78: {
             u32 strPtr = gm::r32(r[13] + 0);
-            u32 newPtr = Trans::translatePtr(strPtr);
+            auto context=Locale::UiText::Full;
+            switch(r[14]) {
+                case 0x1fa390:case 0x21d6e4:context=Locale::UiText::Grid;break;
+                case 0x1f1450:case 0x1f1a04:context=Locale::UiText::Tab;break;
+                case 0x1f5864:case 0x1f5948:context=Locale::UiText::Stat;break;
+                case 0x1dc818:case 0x1dcc98:case 0x1dcff4:context=Locale::UiText::Hud;break;
+            }
+            u32 newPtr = Trans::translatePtr(strPtr,-1,context);
+            if(context==Locale::UiText::Hud && fitPortLabel(*this,newPtr,28))return;
             if (newPtr != strPtr) gm::w32(r[13] + 0, newPtr);
             break;
         }

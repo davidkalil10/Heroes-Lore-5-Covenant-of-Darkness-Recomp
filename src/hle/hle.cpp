@@ -967,9 +967,15 @@ void Game::resume() { cpu.call(sym("Java_co_kr_eamobile_CletEntry_nativeResumeAp
 
 struct TextClip {u32 gc;u32 top,bottom;int limitTop,limitBottom;};
 static std::vector<TextClip> textClips;
+static std::map<u32,u16> fontColors;
+static std::map<u32,u8> fontAlphas;
 static std::vector<std::pair<int,int>> classTextClips;
 void beginCoreText(Cpu& c) {
     auto value=gm::cstr(c.arg(5));int y=int(c.r[3]),height=gm::r8(c.r[0]+0x45)+2;
+    if(getenv("HL5_TRACE_UI") && value.size()<70) {
+        static std::map<std::pair<u32,std::string>,bool> seen;auto key=std::make_pair(c.r[14],value);
+        if(!seen[key]) {seen[key]=true;fprintf(stderr,"[ui-text] lr=%x outer=%x x=%d y=%d width=%d align=%d font=%d/%d text=%s\n",c.r[14],gm::r32(c.r[13]+44),c.r[2],c.r[3],c.arg(4),c.arg(9),gm::r8(c.r[0]+71),height,value.c_str());}
+    }
     bool description=value.rfind("Equipment used:",0)==0 || value.rfind("Equipamento utilizado:",0)==0;
     classTextClips.emplace_back(description?y:-1,description?y+5*height:-1);
 }
@@ -997,10 +1003,8 @@ bool handleLatinFontHook(Cpu& c,u32 pc) {
     }
     auto latin=[](u32 p) {return p>=0x1000 && p+1<gm::MEM_SIZE &&
         (gm::r8(p)==0xc2 || gm::r8(p)==0xc3) && (gm::r8(p+1)&0xc0)==0x80;};
-    static std::map<u32,u16> colors;
-    static std::map<u32,u8> alphas;
-    if(pc==0x141320) {if(!gm::r8(c.r[0]+0x48))colors[c.r[0]]=u16(c.r[1]);return false;}
-    if(pc==0x14126c) {alphas[c.r[0]]=u8(c.r[1]);return false;}
+    if(pc==0x141320) {if(!gm::r8(c.r[0]+0x48))fontColors[c.r[0]]=u16(c.r[1]);return false;}
+    if(pc==0x14126c) {fontAlphas[c.r[0]]=u8(c.r[1]);return false;}
     u32 font=0,p=0,reg=0;
     switch(pc) {
         case 0x140ee8:font=c.r[9];p=c.r[10]+c.r[5];reg=0;break;
@@ -1023,8 +1027,8 @@ bool handleLatinFontHook(Cpu& c,u32 pc) {
             int left=std::max(0,int(gm::r32(gc+4))),top=std::max(0,int(gm::r32(gc+8)));
             int right=std::min(w,int(gm::r32(gc+12))),bottom=std::min(h,int(gm::r32(gc+16)));
             int x=int(c.r[3])+(advance-g->width)/2,y=int(c.arg(4))+g->ascent+g->yoff;
-            u16 color=colors.count(font)?colors[font]:u16(gm::r32(font+4));
-            int opacity=alphas.count(font)?alphas[font]:255;
+            u16 color=fontColors.count(font)?fontColors[font]:u16(gm::r32(font+4));
+            int opacity=fontAlphas.count(font)?fontAlphas[font]:255;
             for(int gy=0;gy<g->height;gy++)for(int gx=0;gx<g->width;gx++) {
                 int dx=x+gx,dy=y+gy;if(dx<left || dx>=right || dy<top || dy>=bottom)continue;
                 int a=int(g->alpha[gy*g->width+gx])*opacity/255;if(!a)continue;
@@ -1077,4 +1081,50 @@ static void drawTitleText(Screen& screen) {
     if(Locale::portuguese())draw("Toque para continuar",screen.h-61,12,true);
     for(int y=std::max(0,screen.h-17);y<screen.h;y++)for(int x=0;x<screen.w;x++)screen.px[y*screen.w+x]=0xff000000;
     draw("v"+std::string(services::Version),screen.h-15,12,false);
+}
+
+
+// The HUD has 30-pixel buttons. Fit a localized label inside 28 pixels while
+// keeping its full wording (Comprar/Salvar). Unchanged/fitting labels retain the
+// original pixel font. This only runs for the three verified DrawTouchUi call sites.
+bool fitPortLabel(Cpu& c,u32 address,int limit) {
+    if(!Locale::portuguese())return false;
+    auto value=gm::cstr(address);u32 font=c.r[0],surface=c.r[1];
+    int cell=int(gm::r8(font+71))+1;
+    if(value.empty() || value.size()>32 || int(value.size())*cell-1<=limit)return false;
+    int w=gm::r32(surface),h=gm::r32(surface+4),pitch=gm::r32(surface+8),bpp=gm::r32(surface+12);
+    u32 pixels=gm::r32(surface+16);
+    if(w<1||w>1280||h<1||h>1280||bpp!=16||pitch<w*2||pixels<0x1000||u64(pixels)+u64(pitch)*h>gm::MEM_SIZE)return false;
+    int height=std::clamp(int(gm::r8(font+0x44))+1,8,24),natural=0;
+    std::vector<const Locale::Glyph*> glyphs;
+    for(unsigned char ch:value) {
+        if(ch<32 || ch>126)return false;
+        auto* g=Locale::glyph(ch,height);if(!g)return false;
+        glyphs.push_back(g);natural+=g->width+1;
+    }
+    if(natural<1)return false;
+    std::vector<u8> alpha(size_t(natural)*height);int cursor=0;
+    for(auto* g:glyphs) {
+        for(int gy=0;gy<g->height;gy++)for(int gx=0;gx<g->width;gx++) {
+            int y=g->ascent+g->yoff+gy;if(y>=0&&y<height)alpha[y*natural+cursor+gx]=g->alpha[gy*g->width+gx];
+        }
+        cursor+=g->width+1;
+    }
+    // Preserve the colored DrawText overload's side effect on the shared font.
+    c.call(0x141d44,{font,c.arg(6)});
+    u16 color=fontColors.count(font)?fontColors[font]:u16(gm::r32(font+4));int opacity=fontAlphas.count(font)?fontAlphas[font]:255;
+    int width=std::min(limit,natural),x=int(c.r[2]),y=int(c.r[3])+1,align=int(c.arg(5));
+    if(align==1)x-=width/2;else if(align==2)x-=width;
+    for(int dy=0;dy<height;dy++)for(int dx=0;dx<width;dx++) {
+        int px=x+dx,py=y+dy;if(px<0||px>=w||py<0||py>=h)continue;
+        int a=int(alpha[dy*natural+dx*natural/width])*opacity/255;if(!a)continue;
+        u32 p=pixels+py*pitch+px*2;u16 d=gm::r16(p);
+        int red=(((color>>11)&31)*a+((d>>11)&31)*(255-a)+127)/255;
+        int green=(((color>>5)&63)*a+((d>>5)&63)*(255-a)+127)/255;
+        int blue=((color&31)*a+(d&31)*(255-a)+127)/255;
+        gm::w16(p,u16((red<<11)|(green<<5)|blue));
+    }
+    gm::w32(font+0x4c,x+width);gm::w32(font+0x50,y);
+    if(getenv("HL5_TRACE_UI"))fprintf(stderr,"[ui-fit] %s width=%d limit=%d\n",value.c_str(),width,limit);
+    c.r[0]=width;c.r[15]=c.r[14];return true;
 }

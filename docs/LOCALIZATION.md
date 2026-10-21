@@ -119,3 +119,33 @@ UTF-8/format tokens and native return to title. Reports/captures use disposable
 saves under build/localization-verification. CLI --language en|pt-BR and
 --language-at frame:code do not persist the test override. --return-title-at frame
 exercises the native state factory. Runtime/aspect verifiers explicitly use English.
+
+
+## 1.1.2 localized widget budgets
+
+Locale::uiText provides Full/Grid/Tab/Stat/Hud contexts. Trans guest-cache keys
+include context so HABILIDADES in a header cannot leak into a 33-pixel tab (HAB.)
+or 48-pixel tile (HABIL.). Canonical resource pointers and English stay unchanged.
+Stat terms were manually revised: ATQ, DEF fís., DEF mág., Vel. atq., Resist.
+These are UI labels, not replacements inside narrative sentences.
+
+Verified BFont wrapper return addresses select widget context:
+- 0x1fa390 / 0x21d6e4: in-game/title grids (48-pixel tiles).
+- 0x1f1450 / 0x1f1a04: skill filter tabs (33-pixel spacing).
+- 0x1f5864 / 0x1f5948: equipment stat label columns, separate numeric draws.
+- 0x1dc818 / 0x1dcc98 / 0x1dcff4: touch HUD labels (30-pixel buttons).
+
+HUD text is Mapa / Comprar / Salvar, including lowercase source aliases. If the
+native bitmap advance exceeds 28 pixels, fitPortLabel rasterizes the whole label
+with the existing cached Latin TTF, fits only its horizontal text width, respects
+font color/alpha and updates the pen. It changes neither canvas nor scenery scale.
+Short fitting labels retain the native pixel font. Do not globally truncate or
+abbreviate SKILL: headers and dialogue have different space requirements.
+
+tools/verify_ui.py captures real grid/equipment/skill menus using disposable
+campaigns and checks English/PT HUD pixel differences outside button rectangles.
+It also opens and exits original Options with the host renderer active.
+--game-menu-at frame:0 pushes native menu state 3 for diagnostics; -1 previews the
+touch HUD in headless mode, temporarily enabling visibility then restoring flags.
+The preview never advances campaign state. HL5_TRACE_UI logs unique label call
+sites/geometry and fitted widths; never enable it in normal release environments.

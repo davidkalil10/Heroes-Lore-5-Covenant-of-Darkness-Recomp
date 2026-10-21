@@ -311,6 +311,7 @@ int main(int argc, char** argv) {
     int availableW=0,availableH=0,settingsAt=-1,titleAt=-1;
     std::string dumpUi,languageOverride;
     std::map<int,std::string> scriptLanguages;
+    std::map<int,int> scriptMenus;
     AspectMode requestedMode=AspectMode::Native;
     bool hasModeOverride=false;
     std::map<int,AspectMode> scriptModes;
@@ -337,6 +338,9 @@ int main(int argc, char** argv) {
             int frame=0,w=0,h=0;
             if(sscanf(argv[++i],"%d:%dx%d",&frame,&w,&h)!=3 || frame<0 || w<1 || h<1) return 2;
             scriptWindows[frame]={w,h};
+        }
+        else if(a=="--game-menu-at" && i+1<argc) {
+            int frame=0,menu=0;if(sscanf(argv[++i],"%d:%d",&frame,&menu)!=2 || frame<0 || menu< -1 || menu>20)return 2;scriptMenus[frame]=menu;
         }
         else if(a=="--language" && i+1<argc) languageOverride=argv[++i];
         else if(a=="--language-at" && i+1<argc) {
@@ -650,6 +654,10 @@ int main(int argc, char** argv) {
             int k = scriptKeys[f - 2];
             game.key(EV_KEY_RELEASE, k);
         }
+        if(scriptMenus.count(f) && scriptMenus[f]>=0) {
+            if(gm::r32(0x1428bc)!=0xe59f3020)return 1;
+            game.cpu.call(0x1428bc,{0,3,u32(scriptMenus[f])});
+        }
         if(scriptLanguages.count(f)) Locale::setLanguage(scriptLanguages[f],false);
         if(f==titleAt && !game.returnToTitle()) return 1;
         auto serviceStatus=(!headless)?services::status():services::Status{};
@@ -673,9 +681,26 @@ int main(int argc, char** argv) {
         wasModal=modal;
         auto loopStart = std::chrono::steady_clock::now();
         if(!modal && !game.quit) {
-            serviceui::beginGuestFrame();
             game.frame();
-            if(!headless) serviceui::endGuestFrame();
+        }
+        if(headless && scriptMenus.count(f) && scriptMenus[f]==-1) {
+            // Diagnostic HUD preview on the current StateGame; never changes campaign state.
+            if(gm::r32(0x142838)!=0xe92d47f0)return 1;
+            u32 common=gm::r32(0x142850+gm::r32(0x1428b4)+gm::r32(0x1428b8));
+            u32 state=gm::r32(common+0x244);if(!state || gm::r32(state+4)!=1)return 1;
+            u32 ui=gm::r32(common+0x1454),input=gm::r32(common+0x15b8);
+            u8 hidden=gm::r8(ui+0x75),enabled=gm::r8(input+4),touchLayout=gm::r8(common+0x8e);
+            gm::w8(ui+0x75,0);gm::w8(input+4,1);gm::w8(common+0x8e,1);
+            game.cpu.call(0x1dc1ac,{state});
+            gm::w8(ui+0x75,hidden);gm::w8(input+4,enabled);gm::w8(common+0x8e,touchLayout);
+            u32 graphic=gm::r32(game.img.exports.at("_lcdG")),surface=gm::r32(graphic);
+            int w=gm::r32(surface),h=gm::r32(surface+4),pitch=gm::r32(surface+8);u32 pixels=gm::r32(surface+16);
+            if(w!=game.screen.w || h!=game.screen.h || gm::r32(surface+12)!=16)return 1;
+            for(int y=0;y<h;y++)for(int x=0;x<w;x++) {
+                u16 color=gm::r16(pixels+y*pitch+x*2);
+                u32 red=(color>>11)&31,green=(color>>5)&63,blue=color&31;
+                game.screen.px[y*w+x]=0xff000000|(((red<<3)|(red>>2))<<16)|(((green<<2)|(green>>4))<<8)|((blue<<3)|(blue>>2));
+            }
         }
         if (benchmark) frameTimes.push_back(std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now()-loopStart).count());
         if (!dumpDir.empty() && dumpEvery > 0 && (f % dumpEvery == 0)) dumpBmp(dumpDir + "/frame_" + std::to_string(f) + ".bmp", game.screen);

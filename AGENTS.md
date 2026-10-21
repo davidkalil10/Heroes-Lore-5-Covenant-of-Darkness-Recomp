@@ -314,3 +314,18 @@ increase; preserve signing configuration. Keep language.ini out of cloud backups
 and packages, alongside all other per-device preferences and credentials.
 User confirmed prior cloud roundtrip; v1.1.1 device UI/update validation remains
 separate from host tests. Do not claim hardware execution from cross-compilation.
+
+
+## 13. Version 1.1.2 — native UI bounds and independent settings
+
+User confirmed Android OTA, live language, and restoring without app exit. Switch
+OTA still needs the next-release device test. Native DrawOption 0x21a1ec MUST NOT
+auto-open host Settings: that hook and guest-frame bookkeeping were removed.
+Only gear/F10/R3 open host Settings. Preserve bounded gear geometry/hit testing.
+
+Locale::uiText contexts and Trans cache keys preserve full titles while compact
+grid/tab labels fit their original rectangles. Do not apply a global SKILL→HAB.
+replacement or shrink the whole game. Read docs/LOCALIZATION.md for verified draw
+sites and HUD-only 28-pixel fitting. Keep translated attribute labels separate
+from right-aligned values. Use tools/verify_ui.py in addition to existing checks.
+Diagnostics operate on isolated test campaigns, never the player's saves.

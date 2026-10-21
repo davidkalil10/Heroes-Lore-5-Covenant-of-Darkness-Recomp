@@ -1,4 +1,4 @@
-# Platform services — version 1.1.1
+# Platform services — version 1.1.2
 
 ## Architecture and reference ports
 
@@ -19,8 +19,8 @@ the other games' filenames or copy their Java RMS/VM reload code into this ARM p
   URL constraints, SHA256, strict base64, save archive validation and staged restore.
 - `src/service_ui.*`: responsive SDL Settings/Cloud/Update panels with Inter font
   rasterized via stb_truetype. F10, R3 and a touch/mouse button expose it globally.
-  The hook at guest `StateMainMenu::DrawOption` 0x21a1ec exposes the panel from the
-  original options entry; closing returns control to the original options.
+  The panel opens only from gear/F10/R3. Native StateMainMenu::DrawOption at
+  0x21a1ec is no longer hooked: the original options remain entirely independent.
 - `src/input_mapping.*`: keyboard and labeled Nintendo/controller policy.
 
 The host freezes guest frames while Settings is open. Restore now stages a
@@ -165,3 +165,19 @@ applies the handoff, checks no process restart/quit, and captures portrait,
 landscape, Switch-sized and emergency-font UI. HL5_UI_LAYOUT_ANDROID=1 and
 HL5_UI_FONT_FALLBACK=1 are diagnostic switches, not player settings.
 Version metadata is managed by tools/bump_version.py (1.1.1 / Android code 3).
+
+
+## 1.1.2 independent Settings and gear
+
+Removed the DrawOption hook and begin/end guest-frame auto-open bookkeeping.
+There is no implicit native-options→host-panel transition, so closing the panel
+cannot reopen it from a guest paint. Removed the misleading Game settings row
+that only closed the panel. Gear geometry is shared by draw/hit testing through
+settingsButtonRect: desktop/Switch 24–40 pixels, Android 40–72. Its small top
+margin keeps it above the native back/menu button as the window grows.
+
+User confirmed Android OTA, live language switching and restore without process
+exit on 1.1.1. Switch OTA remains pending the user's test with 1.1.2.
+Version metadata: 1.1.2 / Android code 4. CTest checks fullscreen geometry and
+repeated panel open/close; tools/verify_ui.py exercises original title Options
+and verifies it never opens the host panel.

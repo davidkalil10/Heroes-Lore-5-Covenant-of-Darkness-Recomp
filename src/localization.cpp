@@ -96,6 +96,19 @@ std::string text(const std::string& source) {
     if(source.size()<4096)cache.emplace(source,result);
     return result;
 }
+std::string uiText(const std::string& source,UiText context) {
+    if(!portuguese() || context==UiText::Full)return text(source);
+    static const std::unordered_map<std::string,std::string> grid={
+        {"STATUS","ATRIB."},{"BAG","BOLSA"},{"EQUIP","EQUIP."},{"SKILL","HABIL."},
+        {"MAGIC","MAGIA"},{"CHARGE","CARGA"},{"SPIRIT","ESPÍR."},{"QUEST","MISSÃO"},{"SYSTEM","SISTEMA"},
+        {"SETTINGS","OPÇÕES"},{"UPDATE","ATUAL."},{"PROGRESS","PROGR."},{"STORAGE","BAÚ"},{"GAME END","SAIR"}};
+    static const std::unordered_map<std::string,std::string> tabs={
+        {"ALL","TODAS"},{"SKILL","HAB."},{"MAGIC","MAGIA"},{"SPIRIT","ESP."},{"MAIN","BASE"}};
+    static const std::unordered_map<std::string,std::string> hud={
+        {"MAP","Mapa"},{"SHOP","Comprar"},{"SAVE","Salvar"},{"map","Mapa"},{"shop","Comprar"},{"save","Salvar"}};
+    const auto& labels=context==UiText::Grid?grid:context==UiText::Tab?tabs:context==UiText::Hud?hud:dictionary;
+    auto found=labels.find(source);return found==labels.end()?text(source):found->second;
+}
 const Glyph* glyph(uint32_t character,int height) {
     if(!fontReady || character<32 || character>255)return nullptr;
     height=std::clamp(height,6,32);auto key=std::make_pair(character,height);

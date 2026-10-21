@@ -114,9 +114,28 @@ int main(int argc,char** argv) {
         auto* window=SDL_CreateWindow("Test",0,0,960,720,SDL_WINDOW_HIDDEN);
         auto* renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_SOFTWARE);
         require(renderer!=nullptr,"SDL test renderer");
-        serviceui::beginGuestFrame();serviceui::notifyGameSettings();serviceui::endGuestFrame();
-        require(serviceui::active(),"Native Settings did not open host options");
-        for(int i=0;i<4;i++) {key(SDLK_DOWN);}
+        require(!serviceui::active(),"Settings opened without an explicit request");
+        for(auto size:{std::pair<int,int>{640,360},{1280,720},{1920,1080},{3840,2160}}) {
+            auto gear=serviceui::settingsButtonRect(size.first,size.second);
+            require(gear.w<=40 && gear.h<=40,"Fullscreen gear grew past its size limit");
+            require(gear.y+gear.h<size.second*9/100,"Gear overlaps the native menu/back area");
+        }
+        for(auto context:{Locale::UiText::Grid,Locale::UiText::Tab}) {
+            auto skill=Locale::uiText("SKILL",context);require(skill=="SKILL","English compact labels changed");
+        }
+        Locale::setLanguage("pt-BR",false);
+        require(Locale::uiText("SKILL",Locale::UiText::Grid)=="HABIL.","Grid skill label");
+        require(Locale::uiText("SKILL",Locale::UiText::Tab)=="HAB.","Tab skill label");
+        require(Locale::uiText("SKILL",Locale::UiText::Full)=="HABILIDADES","Full skill heading was abbreviated");
+        require(Locale::uiText("SHOP",Locale::UiText::Hud)=="Comprar","HUD shop wording");
+        require(Locale::text("Phys. Def.")=="DEF fís.","Stat terminology");
+        Locale::setLanguage("en",false);
+        serviceui::open();key(SDLK_ESCAPE);
+        require(!serviceui::active(),"Settings did not close");
+        serviceui::open();key(SDLK_ESCAPE);
+        require(!serviceui::active(),"Settings reopened or trapped input after closing");
+        serviceui::open();
+        for(int i=0;i<3;i++) {key(SDLK_DOWN);}
         key(SDLK_RETURN);waitTask(); // Cloud page
         key(SDLK_DOWN);key(SDLK_RETURN); // Upload confirmation
         key(SDLK_DOWN);key(SDLK_RETURN); // Cancel
@@ -137,7 +156,7 @@ int main(int argc,char** argv) {
         SDL_setenv("HL5_UI_FONT_FALLBACK","1",1);saveImage(1280,720,"settings-font-fallback.bmp");
         SDL_setenv("HL5_UI_FONT_FALLBACK","",1);SDL_setenv("HL5_UI_LAYOUT_ANDROID","",1);
         // Empty environment values are removed below; draw uses nonempty checks.
-        for(int i=0;i<5;i++) {key(SDLK_DOWN);}
+        for(int i=0;i<4;i++) {key(SDLK_DOWN);}
         key(SDLK_RETURN);
         require(Locale::language()=="en","Settings language toggle failed");
         uploadBackup();waitTask();require(uploads==1,"Drive upload route");

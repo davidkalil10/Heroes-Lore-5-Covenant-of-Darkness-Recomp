@@ -10,7 +10,7 @@
 namespace serviceui {
 static bool flag(const char* name) {auto value=SDL_getenv(name);return value && *value;}
 enum class Page {Settings,Cloud,Update,ConfirmUpload,ConfirmRestore,ConfirmLogout};
-static bool opened=false,guestSettings=false,wasGuestSettings=false;
+static bool opened=false;
 static Page page=Page::Settings;
 static int selected=0,windowW=0,windowH=0;
 static std::function<void()> cycle;
@@ -20,8 +20,13 @@ static SDL_Texture* fontTexture=nullptr;
 static stbtt_bakedchar chars[224];
 static std::vector<unsigned char> fontBitmap;
 static bool fontReady=false,pointerConsumed=false,stickHeld=false;
-static SDL_Rect settingsButton(int w,int h) {
-    int side=std::max(32,std::min(w,h)/12),pad=std::max(8,side/5);return {w-side-pad,pad,side,side};
+SDL_Rect settingsButtonRect(int w,int h) {
+    // Stay above the native back/menu button instead of growing with fullscreen.
+    int side=std::clamp(std::min(w,h)/18,24,40);
+#ifdef __ANDROID__
+    side=std::clamp(std::min(w,h)/24,40,72);
+#endif
+    int pad=std::clamp(side/5,4,8);return {w-side-pad,pad,side,side};
 }
 static uint32_t nextCharacter(const std::string& text,size_t& i) {
     unsigned char c=text[i++];if(c<128) return c;
@@ -102,17 +107,14 @@ void init(const std::string& fontPath,std::function<void()> cycleAspect,std::fun
 }
 void shutdown() {if(fontTexture) SDL_DestroyTexture(fontTexture);fontTexture=nullptr;fontBitmap.clear();opened=false;}
 bool active() {return opened;}
-void open() {opened=true;page=Page::Settings;selected=0;}
-void restoredToTitle() {opened=false;guestSettings=false;wasGuestSettings=false;hits.clear();}
-void beginGuestFrame() {guestSettings=false;}
-void notifyGameSettings() {guestSettings=true;}
-void endGuestFrame() {if(guestSettings && !wasGuestSettings) open();wasGuestSettings=guestSettings;}
+void open() {opened=true;page=Page::Settings;selected=0;SDL_Log("[settings] opened by explicit action");}
+void restoredToTitle() {opened=false;hits.clear();}
 static void go(Page next) {page=next;selected=0;hits.clear();}
 static std::vector<std::string> rows(const services::Status& s) {
     if(s.restartRequired) return {"Close game - reopen to continue"};
     if(s.busy) return {s.userCode.empty()?"Please wait...":"Cancel login"};
     switch(page) {
-        case Page::Settings:return {"Game settings",std::string("Aspect ratio: ")+aspectModeName(mode()),
+        case Page::Settings:return {std::string("Aspect ratio: ")+aspectModeName(mode()),
             std::string("Check updates at startup: ")+(s.autoCheck?"ON":"OFF"),"Check for updates","Cloud save - Google Drive",std::string("Language: ")+(Locale::portuguese()?"Português (Brasil)":"English"),"Back to game"};
         case Page::Cloud:return s.connected?std::vector<std::string>{"Refresh cloud backup","Upload saved progress","Restore cloud backup","Disconnect Google Drive","Back"}:
             std::vector<std::string>{"Connect Google Drive","Back"};
@@ -140,13 +142,12 @@ static void activate() {
     if(s.busy) {if(!s.userCode.empty()) services::cancelLogin();return;}
     if(page==Page::Settings) {
         switch(selected) {
-            case 0:opened=false;break;
-            case 1:cycle();break;
-            case 2:services::setAutoCheck(!s.autoCheck);break;
-            case 3:go(Page::Update);services::checkUpdate(true);break;
-            case 4:go(Page::Cloud);if(s.connected) services::refreshBackup();break;
-            case 5:Locale::setLanguage(Locale::portuguese()?"en":"pt-BR");break;
-            case 6:opened=false;break;
+            case 0:cycle();break;
+            case 1:services::setAutoCheck(!s.autoCheck);break;
+            case 2:go(Page::Update);services::checkUpdate(true);break;
+            case 3:go(Page::Cloud);if(s.connected) services::refreshBackup();break;
+            case 4:Locale::setLanguage(Locale::portuguese()?"en":"pt-BR");break;
+            case 5:opened=false;break;
         }
     } else if(page==Page::Cloud) {
         if(!s.connected) {if(selected==0) services::login();else go(Page::Settings);return;}
@@ -174,7 +175,7 @@ bool event(const SDL_Event& e,bool switchButtons) {
         int x=-1,y=-1;
         if(e.type==SDL_MOUSEBUTTONDOWN) {x=e.button.x;y=e.button.y;}
         else if(e.type==SDL_FINGERDOWN) {x=int(e.tfinger.x*windowW);y=int(e.tfinger.y*windowH);}
-        if(insideRect(x,y,settingsButton(windowW,windowH))) {open();return true;}
+        if(insideRect(x,y,settingsButtonRect(windowW,windowH))) {open();return true;}
         return false;
     }
     if(e.type==SDL_MOUSEBUTTONDOWN || e.type==SDL_FINGERDOWN) pointerConsumed=true;
@@ -223,7 +224,7 @@ void draw(SDL_Renderer* r,int width,int height) {
         else SDL_Log("Settings font texture: %s",SDL_GetError());
     }
     SDL_SetRenderDrawBlendMode(r,SDL_BLENDMODE_BLEND);
-    auto button=settingsButton(width,height);
+    auto button=settingsButtonRect(width,height);
     SDL_SetRenderDrawColor(r,12,20,30,220);SDL_RenderFillRect(r,&button);
     // Geometry-only gear: available even before the font texture is ready.
     int cx=button.x+button.w/2,cy=button.y+button.h/2,outer=button.w*3/10,inner=button.w/7;
@@ -277,5 +278,3 @@ void draw(SDL_Renderer* r,int width,int height) {
     text(r,"Arrows / D-pad: move     Confirm: select     Back: close",float(x),float(panel.y+panel.h-font-10),float(std::max(10,font-6)),{150,175,198,255});
 }
 }
-
-void notifyPortSettings() {serviceui::notifyGameSettings();}

@@ -33,7 +33,14 @@ Os pacotes prontos para jogar ficam em **[Releases](https://github.com/davidkali
 | Android | APK universal ou ARM64 |
 | Nintendo Switch | Homebrew `.nro` com recursos embutidos |
 
-## ✨ Recursos e novidades da v1.1.1
+## ✨ Recursos e novidades da v1.1.2
+
+- **Interface PT-BR revisada:** rótulos próprios para botões, abas e colunas de atributos, mantendo os nomes completos nos títulos.
+- **Comprar / Salvar no HUD:** a fonte respeita a largura dos botões em Native e Wide, sem invadir os vizinhos.
+- **Engrenagem discreta:** tamanho limitado em tela cheia, posicionada acima do botão original de menu/voltar.
+- **Configurações independentes:** a opção original do título abre somente as opções do jogo; o painel do port abre por engrenagem, F10 ou R3 e fecha normalmente.
+
+### Recursos disponíveis
 
 - 🌎 **PT-BR como idioma padrão:** textos de menus, diálogos, missões, itens e habilidades, com acentos. Inglês continua disponível.
 - 🔀 **Troca de idioma durante o jogo:** altere em Configurações; o diálogo e o menu abertos são atualizados sem reiniciar ou sair do mapa.
@@ -46,10 +53,11 @@ Os pacotes prontos para jogar ficam em **[Releases](https://github.com/davidkali
 - 📱 **Painel maior no Android** e carregamento de fonte corrigido no Switch, com fonte de emergência para falhas de carregamento/renderização.
 - 🏷️ **Versão instalada no título** e no painel de configurações; metadados atualizados em todas as plataformas.
 
-O autor confirmou desempenho, áudio, modos de tela e backup/restauração entre
-aparelhos na versão anterior. A v1.1.1 tem testes locais automatizados; a
-autoatualização e os novos ajustes de Android/Switch devem ser conferidos nos
-dispositivos. A tradução foi preparada com assistência automática e revisão de
+O autor confirmou desempenho, áudio, modos de tela, backup/restauração entre
+aparelhos, troca de idioma e restauração sem fechar o jogo. A atualização
+automática no Android também foi confirmada. A atualização do Switch será
+conferida nesta release. As correções visuais da v1.1.2 têm capturas e testes
+automatizados no PC/CI; a conferência final nos dispositivos continua necessária. A tradução foi preparada com assistência automática e revisão de
 termos e formatação; sugestões de texto/contexto são bem-vindas durante a campanha.
 
 ---
@@ -68,8 +76,8 @@ também permitem testar mudanças publicadas na `main` antes de uma release.
 ## ⚙️ Configurações
 
 Abra pela **engrenagem ⚙️ no canto superior direito**, pela tecla **F10**,
-ou clicando o analógico direito (**R3**). O menu de opções original na tela de
-título também dá acesso ao painel; as opções originais permanecem disponíveis.
+ou clicando o analógico direito (**R3**). A opção original de configurações na tela de título abre
+somente as opções do próprio jogo, independentemente do painel do port.
 Use setas/D-pad/analógico para navegar, confirmar para escolher e voltar para fechar.
 Mouse e toque também funcionam. O jogo fica pausado enquanto o painel está aberto.
 
@@ -176,6 +184,7 @@ python tools/verify_runtime.py --exe build/hl5.exe
 python tools/verify_aspect.py --exe build/hl5.exe
 python tools/verify_services.py
 python tools/verify_localization.py --exe build/hl5.exe
+python tools/verify_ui.py --exe build/hl5.exe
 python tools/bump_version.py --check
 ```
 

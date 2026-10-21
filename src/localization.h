@@ -9,5 +9,7 @@ bool setLanguage(const std::string& language,bool persist=true);
 const std::string& language();
 bool portuguese();
 std::string text(const std::string& english);
+enum class UiText {Full,Grid,Tab,Stat,Hud};
+std::string uiText(const std::string& english,UiText context);
 const Glyph* glyph(uint32_t character,int height);
 }

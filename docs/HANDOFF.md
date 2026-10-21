@@ -101,3 +101,23 @@ format preservation, valid UTF-8 and return-to-title with isolated test saves.
 Keep hardware validation distinct: user must test installed 1.1.0 detecting the
 new release, signature-preserving Android upgrade, NRO replacement, Settings text,
 mobile sizing, live language and restored campaign slot selection.
+
+
+## 1.1.2 continuation — user feedback and UI fixes
+
+User confirmed Android automatic update, live language and restore returning to
+title without closing. Switch automatic update is explicitly left for this release.
+Screenshots exposed fixed native widget widths: long PT labels overlapped grid
+tiles, skill tabs, HUD buttons and equipment values. Added context-aware variants
+and revised stat terminology; full headings remain full. HUD Comprar/Salvar fit
+inside 28 pixels of the original 30-pixel buttons. See LOCALIZATION.md for sites.
+
+Removed native DrawOption→host auto-open completely, including guest-frame state.
+Original Options and gear Settings are independent. Gear growth is capped and
+its footprint stays above the native menu/back button. Removed redundant host
+Game settings row; preserve updated selection indices in service_tests.cpp.
+
+Added verify_ui.py to Windows/Linux CI: native grid/equipment/tabs, English/PT
+HUD differences constrained to button rectangles, and original Options entry/exit
+without host modal. Required prior runtime/aspect/localization/services checks
+remain. Metadata is 1.1.2 / Android code 4; release packages keep existing names.

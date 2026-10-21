@@ -89,3 +89,11 @@ services/input changes need their own device validation.
 The separate AUTO/NATIVE/WIDE touch button has been removed. Use the upper-right
 gear → Aspect ratio; F9 and Select+Start remain available. Android Settings sizing
 is proportional to the physical window instead of the desktop 740x650 pixel cap.
+
+
+### 1.1.2 fullscreen controls
+
+Gear dimensions are capped (desktop/Switch 40 pixels, Android 72), with a smaller
+size on compact windows. It stays in the top margin above the native back/menu
+button. UI localization now respects native tile/tab/HUD widths; only overflowing
+HUD text is fitted, never the world viewport or sprites.
