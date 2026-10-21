@@ -123,3 +123,15 @@ switches are enabled by their presence, even if their string value is `0`.
 
 Normal graphical play does not retain a growing vector of timing samples.
 Do not ship APK/NRO launch environments with diagnostic switches enabled.
+
+
+## 1.1.1 text hooks and diagnostics
+
+The accepted AOT regions/decoder are unchanged. Additional sparse CPU hooks cover
+live language resolution, UTF-8 Latin-1 metrics/glyphs and title visibility. See
+docs/LOCALIZATION.md. Core text entry/return 0x141334/0x141470 also keep class
+description clipping separate from ordinary dialogue. Hooks are shared with the
+interpreter oracle; the original 14 AOT differential checks remain required.
+Headless runtime/aspect checks explicitly select English. The localization
+verifier separately compares live EN/PT-BR/EN against fresh runs of each language.
+Avoid inferring device frame rates from host-only language/UI tests.

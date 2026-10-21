@@ -72,3 +72,50 @@ python tools/text_tool.py import --json lang/en --out-dat assets_override
 ```
 
 When `hl5.exe` is run, the engine loads the translated `.dat` files immediately and displays the English text.
+
+
+## 3. Live English / PT-BR — version 1.1.1
+
+The compiled ASCII English overrides and Korean→English dict.bin remain canonical.
+src/localization.* loads assets/locales/pt-BR.json once. PT-BR is the default;
+language.ini in the platform data root stores English/PT-BR preference. This file
+is per-device and excluded from cloud archives/install packages.
+
+Trans::translatePtr resolves Korean→English→selected language at every draw,
+retaining separately keyed stable guest pointers for each language. Do not free
+those buffers on a toggle; native callers may retain a pointer temporarily.
+DrawTextLine (0x141940) and DrawTextField (0x141b00) translate the complete message
+before native wrapping/typewriter truncation. Numbers embedded in printf messages
+are matched against anchored templates, with stable format parameters preserved.
+
+UTF-8 Latin-1 accents occupy two bytes but use the original ASCII cell width.
+Hooks at 0x140ee8, 0x140f6c, 0x141510, 0x14178c and 0x14170c keep width/wrapping
+consistent. 0x13cf00 renders accented glyphs from a cached Inter bitmap into the
+current RGB565 framebuffer, respecting clipping/color/alpha. ASCII keeps the
+native pixel font. 0x141c64 prevents partial UTF-8 during typewriter memcpy.
+TextLine bounds are enforced at glyph submission and restored at 0x141a94;
+entry stack +4 is line count, +12 is first line (not the other way around).
+
+The original title instruction is a bitmap. DrawTitle (0x21db18) marks title
+visibility; native state changes/main menu clear it. Game::frame composes the
+localized instruction and actual services::Version after guest drawing, including
+cached title frames. Do not persist this overlay into gameplay.
+
+Corpus: lang/pt_br/phrases.json (editable cache) and assets/locales/pt-BR.json
+(runtime resource). Translation uses Google Translate with user authorization;
+proper names/classes and formatting were reviewed, but full campaign prose has
+not had a complete human playthrough. Preserve printf tokens and ; ^ } { commands.
+The renderer supports Latin-1; normalize smart punctuation and remove zero-width
+characters. Check screenshots for text length, not only dictionary coverage.
+
+tools/prepare_locale.py rebuilds from the cache. --translate explicitly permits
+sending missing game text to Google Translate; obtain authorization before using
+that flag on new private texts. It never reads saves/tokens. Both Android and
+Switch packagers explicitly include locales; Windows/Linux copy assets recursively.
+
+Validation: python tools/verify_localization.py --exe build/hl5.exe. It compares
+fresh English/PT-BR with an EN→PT-BR→EN switch during an active dialogue, checks
+UTF-8/format tokens and native return to title. Reports/captures use disposable
+saves under build/localization-verification. CLI --language en|pt-BR and
+--language-at frame:code do not persist the test override. --return-title-at frame
+exercises the native state factory. Runtime/aspect verifiers explicitly use English.

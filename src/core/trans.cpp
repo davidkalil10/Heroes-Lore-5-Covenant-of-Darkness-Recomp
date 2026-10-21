@@ -1,5 +1,7 @@
 #include "trans.h"
 #include "guest.h"
+#include "../localization.h"
+#include "../service_data.h"
 #include <unordered_map>
 #include <vector>
 #include <string>
@@ -141,24 +143,36 @@ u32 translatePtr(u32 strPtr, int maxLen) {
 
     std::string orig = gm::cstr(strPtr);
     const char* raw = orig.c_str();
-    bool korean = hasKorean(raw);
+    bool latin=true;
+    for(size_t i=0;i<orig.size();) {
+        unsigned char c=orig[i++];if(c<128)continue;
+        if((c!=0xc2 && c!=0xc3) || i==orig.size() || (orig[i]&0xc0)!=0x80) {latin=false;break;}
+        i++;
+    }
+    bool korean = hasKorean(raw) && !latin;
+    if(!s_inited) init();
+    std::string trans=korean?translateCompound(orig):orig;
+    if(trans.size()<40 && (trans.find("1.1.0")!=std::string::npos)) {
+        trans="v"+std::string(services::Version);
+    } else trans=Locale::text(trans);
 
     // If it's already English and within maxLen (or maxLen not set), return as is
-    if (!korean && (maxLen <= 0 || (int)orig.size() <= maxLen)) {
+    if (trans==orig && !korean && (maxLen <= 0 || (int)orig.size() <= maxLen)) {
         return strPtr;
     }
 
-    std::string key = (maxLen > 0) ? (orig + "@len" + std::to_string(maxLen)) : orig;
+    std::string key = Locale::language()+":"+orig+"@len"+std::to_string(maxLen);
 
     auto itCache = s_guestCache.find(key);
     if (itCache != s_guestCache.end()) return itCache->second;
 
     if (!s_inited) init();
 
-    std::string trans = korean ? translateCompound(orig) : orig;
+    // Translation is resolved at draw time so existing resource pointers stay canonical.
 
     if (maxLen > 3 && (int)trans.size() > maxLen) {
-        trans = trans.substr(0, maxLen - 2) + "..";
+        size_t end=maxLen-2;while(end && (static_cast<unsigned char>(trans[end])&0xc0)==0x80)end--;
+        trans = trans.substr(0,end)+"..";
     }
 
     u32 bufSz = (u32)trans.size() + 1;

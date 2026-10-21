@@ -65,3 +65,7 @@ if(BUILD_TESTING)
   add_test(NAME services COMMAND hl5_service_tests "${CMAKE_CURRENT_SOURCE_DIR}/assets")
   set_tests_properties(services PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 endif()
+
+if(BUILD_TESTING)
+  target_sources(hl5_service_tests PRIVATE src/localization.cpp)
+endif()

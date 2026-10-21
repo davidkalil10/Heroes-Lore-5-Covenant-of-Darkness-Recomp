@@ -50,7 +50,7 @@ changing the CPU, clocks, audio, build rules, or VFS hooks.
   - In-Game cutscene and scenario engine (`00000.scn`, Map 36 tiles, objects, animations) fully loaded and rendering in 4,685 unique colors.
   - **Full English Translation:** 100% of Menus (`menu_text.dat`), In-game strings (`ingame_text.dat`), Quests/Achievements (`mission_text.dat`), Help Manuals (`help_android_*.dat`), and All Story Dialogue Scenarios (`c/map/*.scn` and `c/ep/ep_*/*.scn`, 258 files total) translated and compiled into `assets_override/`.
   - **Gamepad Support:** Plug-and-play SDL2 GameController auto-detection (Xbox, PlayStation, Nintendo Switch) with analog stick and button mappings.
-  - **Aspect Ratio & Window Controls:** Real Native / Wide / Auto viewport expansion (F9, Select+Start, touch button) and Fullscreen toggle (F11 / Alt+Enter).
+  - **Aspect Ratio & Window Controls:** Real Native / Wide / Auto viewport expansion (F9, Select+Start, Settings) and Fullscreen toggle (F11 / Alt+Enter).
   - Complete standalone distribution packaged in `dist/` with zero external dependencies (pure Windows native).
 
 ---
@@ -152,7 +152,7 @@ The Help menu (`c/csv2/help_android_skt.dat`, `help_ktf.dat`, etc.) contains 21 
 ### Current implementation
 - `src/display_layout.*` owns Native (240x400), Wide (712x400, approximately
   16:9), and Auto (actual window/orientation) policy, saved in `data/display.ini`.
-- F9, Back/Select+Start (Switch −/+), or the top-right touch/mouse button cycles
+- F9, Back/Select+Start (Switch −/+), or Settings → Aspect ratio cycles
   modes. Back and Start alone dispatch on release so the chord sends no game action.
 - SDL presentation always uses uniform scaling. There is no stretch mode.
 - `Game::resizeViewport` calls the original `nativeInitDisplay`, replaces both
@@ -252,8 +252,8 @@ The project includes an end-to-end automated pipeline:
 ### Milestone 2: Modernization & Quality of Life (In Progress)
 - [x] **True Widescreen & Auto Aspect Ratio:** Modify viewport culling in `nativeInitDisplay` / `Camera` / `Graphic` to render additional map tiles dynamically instead of letterboxing.
 - [ ] **Gamepad Polish:** On-screen button prompt glyphs matching connected controller (Xbox/PlayStation/Switch).
-- [ ] **Multilanguage (PT-BR):** Implement Portuguese translation using the established translation pipeline.
-- [x] **Cloud Saves:** Google device login and manual backup/restore implemented for HL5; real device/account roundtrip pending. Separate archives from other games.
+- [x] **Multilanguage (PT-BR):** Live English/PT-BR selection, default PT-BR; see docs/LOCALIZATION.md.
+- [x] **Cloud Saves:** Google device login and manual backup/restore implemented for HL5; real device/account backup and restore confirmed by user. Separate archives from other games.
 
 ### Milestone 3: Cross-Platform Ports
 - [x] **Nintendo Switch:** libnx + SDL2 build pipeline available; the user accepted shared runtime/aspect gameplay; validate new services on hardware.
@@ -277,8 +277,10 @@ Double-click `dist\hl5.exe`.
 
 Read `docs/SERVICES.md` before changing networking, save paths, installers or
 version metadata. The shared services do not run in headless game tests.
-Settings pauses guest frames; after restore the guest MUST NOT resume. Close and
-reopen instead, or stale in-memory saves could overwrite the downloaded files.
+Settings pauses guest frames. Restore workers only stage validated bytes. The main
+thread MUST destroy the old guest state before swapping save files, then recreate
+the title to reload slot metadata. Never resume the old campaign after restoration.
+Use Game::returnToTitle() / services::applyPendingRestore(); do not quit the app.
 Archive only internal/external files, never OAuth tokens or device preferences.
 Keep transactional restore safety copies and installer rollback. Keep TLS peer
 verification enabled, including Switch's RomFS CA bundle.
@@ -290,3 +292,25 @@ never restore the old whole-data-directory copy rules. Existing OAuth client is
 reused from Zero; game IDs, Drive folder and save filenames stay HL5-specific.
 Version changes must update C++ services::Version, Android name/code and Switch
 metadata. Actions artifacts are not releases and do not trigger the updater.
+
+
+## 12. Version 1.1.1 — live language and services polish
+
+Read docs/LOCALIZATION.md and the 1.1.1 additions to docs/SERVICES.md before edits.
+PT-BR is the default; English resources remain canonical. Never overwrite guest
+resource strings with translated bytes: language changes must affect already-open
+dialogues. Locale::text resolves at draw time; Trans retains separate stable guest
+buffers per language. Width/wrapping hooks treat UTF-8 Latin-1 accents as one ASCII
+cell; preserve original CPU instructions for other encodings and English.
+
+Settings uses a gear at upper right; no separate aspect overlay. Android layout
+scales to available pixels; RomFS resource joins must preserve romfs:/ (one slash).
+Use SDL_getenv with SDL_setenv for UI diagnostic toggles on Windows.
+
+Required checks: CTest, runtime/aspect/services scripts, and
+python tools/verify_localization.py --exe build/hl5.exe (Linux: build/hl5).
+Use tools/bump_version.py, then --check before a release. Android versionCode must
+increase; preserve signing configuration. Keep language.ini out of cloud backups
+and packages, alongside all other per-device preferences and credentials.
+User confirmed prior cloud roundtrip; v1.1.1 device UI/update validation remains
+separate from host tests. Do not claim hardware execution from cross-compilation.

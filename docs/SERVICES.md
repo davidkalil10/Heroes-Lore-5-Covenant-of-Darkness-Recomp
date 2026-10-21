@@ -1,4 +1,4 @@
-# Platform services — version 1.1.0
+# Platform services — version 1.1.1
 
 ## Architecture and reference ports
 
@@ -23,9 +23,9 @@ the other games' filenames or copy their Java RMS/VM reload code into this ARM p
   original options entry; closing returns control to the original options.
 - `src/input_mapping.*`: keyboard and labeled Nintendo/controller policy.
 
-The host freezes guest frames while Settings is open. A restore sets a mandatory
-restart state: the guest must never resume and overwrite restored disk files with
-old in-memory saves. Existing save formats remain raw guest bytes; no conversion
+The host freezes guest frames while Settings is open. Restore now stages a
+main-thread handoff: the old campaign must be destroyed before restored files
+replace local saves, then title metadata must be reconstructed. Existing save formats remain raw guest bytes; no conversion
 to host structs or other games' formats occurs. Sound continues in the modal.
 
 ## Cloud archive and restoration
@@ -42,7 +42,7 @@ Restore validates everything before writing, stages complete new directories,
 moves old ones to `<data-root>/save-backups/<timestamp>/`, then renames staged
 directories into place. A failed directory swap rolls back prior moves. Complete
 replacement avoids mixing an old local slot with the downloaded snapshot. The
-player confirms replacement, then closes and reopens the app on success.
+player confirms replacement, then returns to the native title in the same process.
 
 Upload snapshots flushed disk files while the guest is paused. Users must save
 inside the game first; unsaved RAM progress is not serialized. Before upload or
@@ -129,8 +129,9 @@ Windows tests replacement, rollback, path traversal and preserved saves/tokens.
 All packagers are tested for private-data exclusion and Android manifest hashes.
 CI runs them on Windows/Linux, alongside prior runtime/display checks.
 
-Pending device validation: actual Google authorization, upload on one platform
-and restore on another with a real character; Android installer permissions and
+The user confirmed actual Google backup and restore across devices on 1.1.0.
+Pending device validation for 1.1.1: live language/mobile/Switch font fixes,
+return-to-title restore, Android installer permissions and
 signature-preserving upgrade; Switch HTTPS/NRO replacement under real homebrew
 launch paths; AppImage replacement. Cross-compilation does not prove these flows.
 
@@ -138,3 +139,29 @@ Sources: [Google device authorization](https://developers.google.com/identity/pr
 [GitHub release API](https://docs.github.com/en/rest/releases/releases),
 [nlohmann/json v3.12.0](https://github.com/nlohmann/json/releases/tag/v3.12.0),
 [curl CA bundle](https://curl.se/docs/caextract.html).
+
+
+## 1.1.1 restore lifecycle and UI regression fixes
+
+restoreBackup() validates download contents on the worker and publishes
+Status::restoreReady; it MUST NOT write active save directories or request exit.
+On the main thread, Game::returnToTitle() calls the opcode-checked native
+BaseState::ChangeState at 0x142838 with (0,5,3). This factory destroys the old
+state stack and creates StateMainMenu with title substate 3. Only afterward does
+applyPendingRestore() perform transactional replacement. Call returnToTitle()
+again so constructors reload all three SlotInfo records from the restored files,
+then close the overlay/reset held controls and continue the same app loop.
+The first title construction reads old slot data; the second is intentional.
+Never substitute Java RMS reload code or resume the previous in-memory campaign.
+
+resourcePath now joins romfs:/ without producing romfs://. The font atlas is
+uploaded through SDL_CreateTextureFromSurface; a geometry-based emergency font
+keeps Settings usable if font loading/upload fails. Android has proportional
+panel/font/row sizing instead of desktop pixel caps. Root panel includes live
+language selection and the gear replaces both old overlay buttons.
+
+CTest stages a different cloud snapshot, asserts no worker-side save mutation,
+applies the handoff, checks no process restart/quit, and captures portrait,
+landscape, Switch-sized and emergency-font UI. HL5_UI_LAYOUT_ANDROID=1 and
+HL5_UI_FONT_FALLBACK=1 are diagnostic switches, not player settings.
+Version metadata is managed by tools/bump_version.py (1.1.1 / Android code 3).

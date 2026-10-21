@@ -21,7 +21,7 @@ ROMFS       :=  romfs
 APP_TITLE   :=  Heroes Lore 5: Covenant of Darkness
 APP_DESCRIPTION := Recompilacao Nativa C++17 + SDL2 por David Kalil Braga (2026)
 APP_AUTHOR  :=  Electronic Arts / Port por David Kalil Braga (2026)
-APP_VERSION :=  1.1.0
+APP_VERSION :=  1.1.1
 APP_TITLEID :=  0100484C55000000
 APP_ICON    :=  $(TOPDIR)/switch/icon.jpg
 

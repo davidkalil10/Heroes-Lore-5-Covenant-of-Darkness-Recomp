@@ -17,6 +17,8 @@ def prepare_android_assets():
         if entry.is_file():
             shutil.copy2(entry, os.path.join(assets_dir, entry.name))
 
+    shutil.copytree("assets/locales", os.path.join(assets_dir, "locales"), dirs_exist_ok=True)
+
     candidates = [
         ("dist/libHeroesLore5.so", "libHeroesLore5.so"),
         ("reference/extracted_apk/lib/armeabi/libHeroesLore5.so", "libHeroesLore5.so"),

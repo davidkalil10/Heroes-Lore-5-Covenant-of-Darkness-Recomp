@@ -35,7 +35,7 @@ def main():
                 run_env.update(HL5_NO_AOT='1', HL5_NO_VFS_CACHE='1')
             dump = temporary / label / 'frames'
             command = [str(exe), '--apk', str(root / 'reference/extracted_apk'),
-                       '--data', str(temporary / label / 'saves'), '--headless',
+                       '--data', str(temporary / label / 'saves'), '--headless', '--language', 'en',
                        '--frames', '1200', '--aspect', 'native', '--dump', str(dump), '--dump-every', '120', *keys]
             log = reports / f'{label}.log'
             with log.open('w', encoding='utf-8') as output:

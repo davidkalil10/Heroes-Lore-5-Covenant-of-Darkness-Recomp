@@ -12,4 +12,5 @@ void draw(SDL_Renderer* renderer,int width,int height);
 void beginGuestFrame();
 void endGuestFrame();
 void notifyGameSettings();
+void restoredToTitle();
 }

@@ -1,5 +1,6 @@
 #include "service_ui.h"
 #include "services.h"
+#include "localization.h"
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "vendor/stb_truetype.h"
 #include <algorithm>
@@ -7,6 +8,7 @@
 #include <vector>
 
 namespace serviceui {
+static bool flag(const char* name) {auto value=SDL_getenv(name);return value && *value;}
 enum class Page {Settings,Cloud,Update,ConfirmUpload,ConfirmRestore,ConfirmLogout};
 static bool opened=false,guestSettings=false,wasGuestSettings=false;
 static Page page=Page::Settings;
@@ -19,7 +21,7 @@ static stbtt_bakedchar chars[224];
 static std::vector<unsigned char> fontBitmap;
 static bool fontReady=false,pointerConsumed=false,stickHeld=false;
 static SDL_Rect settingsButton(int w,int h) {
-    int s=std::clamp(std::min(w,h)/360,1,3);return {8,8,88*s,22*s};
+    int side=std::max(32,std::min(w,h)/12),pad=std::max(8,side/5);return {w-side-pad,pad,side,side};
 }
 static uint32_t nextCharacter(const std::string& text,size_t& i) {
     unsigned char c=text[i++];if(c<128) return c;
@@ -28,12 +30,46 @@ static uint32_t nextCharacter(const std::string& text,size_t& i) {
     return '?';
 }
 static float textWidth(const std::string& text,float size) {
+    if(!fontReady || flag("HL5_UI_FONT_FALLBACK")) {float width=0;for(size_t i=0;i<text.size();){nextCharacter(text,i);width+=size*.6f;}return width;}
     float x=0;
     for(size_t i=0;i<text.size();) {auto c=nextCharacter(text,i);if(c<32||c>255)c='?';x+=chars[c-32].xadvance*size/32;}
     return x;
 }
-static void text(SDL_Renderer* r,const std::string& value,float x,float y,float size,SDL_Color color) {
-    if(!fontTexture) return;
+static void text(SDL_Renderer* r,const std::string& source,float x,float y,float size,SDL_Color color) {
+    auto value=Locale::text(source);
+    if(!fontTexture || flag("HL5_UI_FONT_FALLBACK")) {
+        // Emergency built-in font keeps Settings readable on renderer/font failures.
+        static const char* alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:.-/?!+() ";
+        static const char* pixels[]={
+          "0111010001111111000110001","1111010001111101000111110","0111110000100001000001111","1111010001100011000111110",
+          "1111110000111101000011111","1111110000111101000010000","0111110000101111000101111","1000110001111111000110001",
+          "1111100100001000010011111","0011100010000101001001100","1000110010111001001010001","1000010000100001000011111",
+          "1000111011101011000110001","1000111001101011001110001","0111010001100011000101110","1111010001111101000010000",
+          "0111010001101011001001101","1111010001111101001010001","0111110000011100000111110","1111100100001000010000100",
+          "1000110001100011000101110","1000110001100010101000100","1000110001101011101110001","1000101010001000101010001",
+          "1000101010001000010000100","1111100010001000100011111","0111010011101011100101110","0010001100001000010001110",
+          "0111010001000100010011111","1111000001001100000111110","1001010010111110001000010","1111110000111100000111110",
+          "0111010000111101000101110","1111100010001000100001000","0111010001011101000101110","0111010001011110000101110",
+          "0000000100000000010000000","0000000000000000000000100","0000000000111110000000000","0000100010001000100010000",
+          "0111010001000100000000010","0010000100001000000000100","0000000100011100010000000","0001000100001000010000010",
+          "0100000100001000010001000","0000000000000000000000000"};
+        SDL_SetRenderDrawColor(r,color.r,color.g,color.b,color.a);float scale=std::max(1.0f,size/7);
+        for(size_t i=0;i<value.size();) {
+            auto c=nextCharacter(value,i);
+            if(c>=0xe0 && c<=0xe5)c='A';else if(c==0xe7)c='C';else if(c>=0xe8&&c<=0xeb)c='E';
+            else if(c>=0xec&&c<=0xef)c='I';else if(c>=0xf2&&c<=0xf6)c='O';else if(c>=0xf9&&c<=0xfc)c='U';
+            if(c>='a'&&c<='z')c-=32;
+            if(c>=0xc0&&c<=0xc5)c='A';else if(c==0xc7)c='C';else if(c>=0xc8&&c<=0xcb)c='E';
+            else if(c>=0xcc&&c<=0xcf)c='I';else if(c>=0xd2&&c<=0xd6)c='O';else if(c>=0xd9&&c<=0xdc)c='U';
+            const char* found=c<128?strchr(alphabet,int(c)):nullptr;
+            size_t index=found?size_t(found-alphabet):40;
+            for(int row=0;row<5;row++)for(int col=0;col<5;col++)if(pixels[index][row*5+col]=='1') {
+                SDL_FRect rect{x+col*scale,y+2+row*scale,scale,scale};SDL_RenderFillRectF(r,&rect);
+            }
+            x+=size*.6f;
+        }
+        return;
+    }
     SDL_SetTextureColorMod(fontTexture,color.r,color.g,color.b);SDL_SetTextureAlphaMod(fontTexture,color.a);
     float scale=size/32;
     for(size_t i=0;i<value.size();) {
@@ -43,7 +79,8 @@ static void text(SDL_Renderer* r,const std::string& value,float x,float y,float 
         SDL_RenderCopyF(r,fontTexture,&src,&dst);x+=g.xadvance*scale;
     }
 }
-static int wrapped(SDL_Renderer* r,const std::string& value,int x,int y,int width,int size,int lines=6) {
+static int wrapped(SDL_Renderer* r,const std::string& source,int x,int y,int width,int size,int lines=6) {
+    auto value=Locale::text(source);
     std::string line,word;int count=0;
     auto emit=[&]() {if(count<lines) text(r,line,float(x),float(y+count*(size+5)),float(size),{210,224,239,255});line.clear();count++;};
     for(size_t i=0;i<=value.size();i++) {
@@ -66,6 +103,7 @@ void init(const std::string& fontPath,std::function<void()> cycleAspect,std::fun
 void shutdown() {if(fontTexture) SDL_DestroyTexture(fontTexture);fontTexture=nullptr;fontBitmap.clear();opened=false;}
 bool active() {return opened;}
 void open() {opened=true;page=Page::Settings;selected=0;}
+void restoredToTitle() {opened=false;guestSettings=false;wasGuestSettings=false;hits.clear();}
 void beginGuestFrame() {guestSettings=false;}
 void notifyGameSettings() {guestSettings=true;}
 void endGuestFrame() {if(guestSettings && !wasGuestSettings) open();wasGuestSettings=guestSettings;}
@@ -75,7 +113,7 @@ static std::vector<std::string> rows(const services::Status& s) {
     if(s.busy) return {s.userCode.empty()?"Please wait...":"Cancel login"};
     switch(page) {
         case Page::Settings:return {"Game settings",std::string("Aspect ratio: ")+aspectModeName(mode()),
-            std::string("Check updates at startup: ")+(s.autoCheck?"ON":"OFF"),"Check for updates","Cloud save - Google Drive","Back to game"};
+            std::string("Check updates at startup: ")+(s.autoCheck?"ON":"OFF"),"Check for updates","Cloud save - Google Drive",std::string("Language: ")+(Locale::portuguese()?"Português (Brasil)":"English"),"Back to game"};
         case Page::Cloud:return s.connected?std::vector<std::string>{"Refresh cloud backup","Upload saved progress","Restore cloud backup","Disconnect Google Drive","Back"}:
             std::vector<std::string>{"Connect Google Drive","Back"};
         case Page::Update:
@@ -83,7 +121,7 @@ static std::vector<std::string> rows(const services::Status& s) {
             if(s.updateAvailable) return {"Download "+s.release.tag,"Check again","Back"};
             return {"Check again","Back"};
         case Page::ConfirmUpload:return {"Confirm upload - replace cloud backup","Cancel"};
-        case Page::ConfirmRestore:return {"Confirm restore and restart","Cancel"};
+        case Page::ConfirmRestore:return {"Confirm restore and return to title","Cancel"};
         case Page::ConfirmLogout:return {"Disconnect this device","Cancel"};
     }
     return {};
@@ -107,7 +145,8 @@ static void activate() {
             case 2:services::setAutoCheck(!s.autoCheck);break;
             case 3:go(Page::Update);services::checkUpdate(true);break;
             case 4:go(Page::Cloud);if(s.connected) services::refreshBackup();break;
-            case 5:opened=false;break;
+            case 5:Locale::setLanguage(Locale::portuguese()?"en":"pt-BR");break;
+            case 6:opened=false;break;
         }
     } else if(page==Page::Cloud) {
         if(!s.connected) {if(selected==0) services::login();else go(Page::Settings);return;}
@@ -166,34 +205,52 @@ bool event(const SDL_Event& e,bool switchButtons) {
     }
     return true; // A modal consumes game input, including releases and touch gestures.
 }
+static bool mobileLayout() {
+#ifdef __ANDROID__
+    return true;
+#else
+    return flag("HL5_UI_LAYOUT_ANDROID");
+#endif
+}
 void draw(SDL_Renderer* r,int width,int height) {
     windowW=width;windowH=height;
     if(!fontTexture && fontReady) {
         std::vector<uint32_t> rgba(fontBitmap.size());
         for(size_t i=0;i<rgba.size();i++) rgba[i]=(uint32_t(fontBitmap[i])<<24)|0xffffff;
-        fontTexture=SDL_CreateTexture(r,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STATIC,1024,1024);
-        if(fontTexture) {SDL_UpdateTexture(fontTexture,nullptr,rgba.data(),1024*4);SDL_SetTextureBlendMode(fontTexture,SDL_BLENDMODE_BLEND);}
+        auto* surface=SDL_CreateRGBSurfaceWithFormatFrom(rgba.data(),1024,1024,32,4096,SDL_PIXELFORMAT_ARGB8888);
+        if(surface) {fontTexture=SDL_CreateTextureFromSurface(r,surface);SDL_FreeSurface(surface);}
+        if(fontTexture) SDL_SetTextureBlendMode(fontTexture,SDL_BLENDMODE_BLEND);
+        else SDL_Log("Settings font texture: %s",SDL_GetError());
     }
     SDL_SetRenderDrawBlendMode(r,SDL_BLENDMODE_BLEND);
     auto button=settingsButton(width,height);
     SDL_SetRenderDrawColor(r,12,20,30,220);SDL_RenderFillRect(r,&button);
-    text(r,"SETTINGS",float(button.x+8),float(button.y),float(button.h*.72),{240,246,252,255});
+    // Geometry-only gear: available even before the font texture is ready.
+    int cx=button.x+button.w/2,cy=button.y+button.h/2,outer=button.w*3/10,inner=button.w/7;
+    SDL_SetRenderDrawColor(r,225,235,245,255);
+    for(int y=-outer;y<=outer;y++)for(int x=-outer;x<=outer;x++) {
+        int d=x*x+y*y;if(d>=inner*inner && d<=outer*outer)SDL_RenderDrawPoint(r,cx+x,cy+y);
+    }
+    for(int i=0;i<8;i++) {double angle=i*3.141592653589793/4;int s=std::max(3,button.w/8);
+        SDL_Rect tooth{cx+int(std::cos(angle)*outer)-s/2,cy+int(std::sin(angle)*outer)-s/2,s,s};SDL_RenderFillRect(r,&tooth);}
     auto s=services::status();
     if(s.updateAvailable && !opened) {SDL_SetRenderDrawColor(r,255,200,75,255);SDL_Rect badge{button.x+button.w-8,button.y+2,6,6};SDL_RenderFillRect(r,&badge);}
     if(!opened) return;
     SDL_SetRenderDrawColor(r,0,0,0,185);SDL_RenderFillRect(r,nullptr);
     int panelW=std::min(740,std::max(180,width-24)),panelH=std::min(650,std::max(180,height-24));
+    if(mobileLayout()) {panelW=std::min(width*94/100,height*3/2);panelH=height*(height>width?76:94)/100;}
     SDL_Rect panel{(width-panelW)/2,(height-panelH)/2,panelW,panelH};
     SDL_SetRenderDrawColor(r,18,27,42,250);SDL_RenderFillRect(r,&panel);
     SDL_SetRenderDrawColor(r,97,157,190,255);SDL_RenderDrawRect(r,&panel);
     int pad=std::max(10,panelW/32),x=panel.x+pad,y=panel.y+pad;
-    int font=std::clamp(panelW/27,13,23),rowH=std::clamp(panelH/14,25,42);
+    int font=std::clamp(panelW/27,13,23),rowH=std::clamp(panelH/16,25,42);
+    if(mobileLayout()) {font=std::max(13,std::min(panelW/26,panelH/22));rowH=font*2;}
     std::string title=page==Page::Settings?"SETTINGS":page==Page::Update?"APP UPDATE":"CLOUD SAVE - GOOGLE DRIVE";
     text(r,title,float(x),float(y),float(font+3),{241,205,115,255});
     y+=font+16;
     std::string info;
-    if(page==Page::Settings) info="Heroes Lore 5 | Version "+std::string(services::Version);
-    else if(page==Page::ConfirmRestore) info="This replaces local saved progress with the cloud backup. A local safety copy is kept. Close and reopen the game afterward.";
+    if(page==Page::Settings) info="Heroes Lore 5 | "+Locale::text("Version")+" "+std::string(services::Version);
+    else if(page==Page::ConfirmRestore) info="This replaces local saved progress with the cloud backup. A local safety copy is kept. You will return to the title screen to load the restored save.";
     else if(page==Page::ConfirmUpload) info="Upload progress already saved in the game. The previous cloud backup will be replaced. Save your game first.";
     else if(page==Page::ConfirmLogout) info="Remove the Google login from this device. The backup in Drive is kept.";
     else if(page==Page::Cloud) {
@@ -205,7 +262,7 @@ void draw(SDL_Renderer* r,int width,int height) {
         y+=wrapped(r,s.verificationUrl,x,y,panelW-pad*2,font,2)+5;
         text(r,s.userCode,float(x),float(y),float(font+10),{115,214,255,255});y+=font+25;
     }
-    auto labels=rows(s);selected=std::clamp(selected,0,int(labels.size())-1);
+    auto labels=rows(s);for(auto& label:labels)label=Locale::text(label);selected=std::clamp(selected,0,int(labels.size())-1);
     hits.clear();
     for(size_t i=0;i<labels.size();i++) {
         SDL_Rect rect{x,y,panelW-pad*2,rowH};hits.push_back(rect);
@@ -216,8 +273,8 @@ void draw(SDL_Renderer* r,int width,int height) {
         y+=rowH+5;
     }
     y+=8;
-    wrapped(r,s.message,x,y,panelW-pad*2,std::max(12,font-2),std::max(1,(panel.y+panel.h-26-y)/(font+3)));
-    text(r,"Arrows / D-pad: move     Confirm: select     Back: close",float(x),float(panel.y+panel.h-25),float(std::max(10,font-6)),{150,175,198,255});
+    wrapped(r,s.message,x,y,panelW-pad*2,std::max(12,font-2),std::max(1,(panel.y+panel.h-font-20-y)/(font+3)));
+    text(r,"Arrows / D-pad: move     Confirm: select     Back: close",float(x),float(panel.y+panel.h-font-10),float(std::max(10,font-6)),{150,175,198,255});
 }
 }
 

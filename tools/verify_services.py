@@ -54,6 +54,8 @@ def main():
         fixture=base/'packaging'
         (fixture/'assets').mkdir(parents=True)
         (fixture/'assets/ui_font.ttf').write_bytes(b'font')
+        (fixture/'assets/locales').mkdir()
+        (fixture/'assets/locales/pt-BR.json').write_text('{}')
         (fixture/'assets/cacert.pem').write_bytes(b'cert')
         (fixture/'data/internal').mkdir(parents=True)
         (fixture/'data/external').mkdir()
@@ -77,6 +79,7 @@ def main():
                 for private in ('cloud_auth.json','services.json','kickass'):
                     assert not list(destination.rglob(private)),(tool,private)
                 assert (destination/'data/dict.bin').read_bytes()==b'public-dictionary'
+                assert list(destination.rglob('pt-BR.json')),tool
                 checks.append(tool+'_excludes_private_data')
             manifest=(fixture/'android/app/src/main/assets/assets_list.txt').read_text()
             assert 'ui_font.ttf:4:'+hashlib.sha256(b'font').hexdigest() in manifest

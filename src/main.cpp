@@ -4,6 +4,7 @@
 #include "input_mapping.h"
 #include "services.h"
 #include "service_ui.h"
+#include "localization.h"
 #include <SDL.h>
 #include "audio/audio.h"
 #include <algorithm>
@@ -307,8 +308,9 @@ int main(int argc, char** argv) {
 #endif
     int frames = -1, dumpEvery = 0, lw = 240, lh = 400;
     bool headless = false, verbose = false;
-    int availableW=0,availableH=0,settingsAt=-1;
-    std::string dumpUi;
+    int availableW=0,availableH=0,settingsAt=-1,titleAt=-1;
+    std::string dumpUi,languageOverride;
+    std::map<int,std::string> scriptLanguages;
     AspectMode requestedMode=AspectMode::Native;
     bool hasModeOverride=false;
     std::map<int,AspectMode> scriptModes;
@@ -336,6 +338,11 @@ int main(int argc, char** argv) {
             if(sscanf(argv[++i],"%d:%dx%d",&frame,&w,&h)!=3 || frame<0 || w<1 || h<1) return 2;
             scriptWindows[frame]={w,h};
         }
+        else if(a=="--language" && i+1<argc) languageOverride=argv[++i];
+        else if(a=="--language-at" && i+1<argc) {
+            int frame=0;char language[16]={};if(sscanf(argv[++i],"%d:%15s",&frame,language)!=2)return 2;scriptLanguages[frame]=language;
+        }
+        else if(a=="--return-title-at" && i+1<argc) titleAt=atoi(argv[++i]);
         else if(a=="--settings-at" && i+1<argc) settingsAt=atoi(argv[++i]);
         else if(a=="--dump-ui" && i+1<argc) dumpUi=argv[++i];
         else if (a == "--headless") headless = true;
@@ -376,6 +383,12 @@ int main(int argc, char** argv) {
         SDL_GetWindowSize(win,&availableW,&availableH);
     }
     if(availableW<1 || availableH<1) {availableW=1280;availableH=720;}
+    std::string resourceRoot="assets";
+    if(!std::filesystem::exists(resourceRoot+"/ui_font.ttf")) {
+        if(std::filesystem::exists(exeDir+"/assets/ui_font.ttf")) resourceRoot=exeDir+"/assets";
+        else resourceRoot=apk;
+    }
+    Locale::init(resourceRoot,data,languageOverride);
     const auto initialViewport=viewportForAspect(aspectMode,availableW,availableH,lw,lh);
     LOGI("[video] mode=%s available=%dx%d viewport=%dx%d\n",aspectModeName(aspectMode),availableW,availableH,initialViewport.width,initialViewport.height);
     static Game game;
@@ -394,7 +407,7 @@ int main(int argc, char** argv) {
     bool isFullscreen = false;
     bool rendererVsync = false;
     AspectChord aspectChord;
-    bool viewportDirty=false,modePointerHeld=false,gamePointerHeld=false;
+    bool viewportDirty=false,gamePointerHeld=false;
     int touchX=0,touchY=0;
     Uint32 resizeSince=0;
 
@@ -446,10 +459,6 @@ int main(int argc, char** argv) {
     auto handlePointer = [&](int eventType, int mx, int my) {
         int winW = 0, winH = 0;
         SDL_GetWindowSize(win, &winW, &winH);
-        if(eventType==EV_PTR_PRESS && insideRect(mx,my,aspectButtonRect(winW,winH))) {
-            modePointerHeld=true;selectMode(nextAspectMode(aspectMode),true);return;
-        }
-        if(modePointerHeld) {if(eventType==EV_PTR_RELEASE) modePointerHeld=false;return;}
         SDL_Rect dst = computeDstRect(winW, winH);
         if (dst.w <= 0 || dst.h <= 0) return;
 
@@ -474,11 +483,6 @@ int main(int argc, char** argv) {
     };
 
     if(!headless) {
-        std::string resourceRoot="assets";
-        if(!std::filesystem::exists(resourceRoot+"/ui_font.ttf")) {
-            if(std::filesystem::exists(exeDir+"/assets/ui_font.ttf")) resourceRoot=exeDir+"/assets";
-            else resourceRoot=apk;
-        }
         std::string executablePath=exeDir+"/hl5.exe";
 #if defined(_WIN32)
         char modulePath[32768]={};GetModuleFileNameA(nullptr,modulePath,sizeof(modulePath));executablePath=modulePath;
@@ -538,7 +542,7 @@ int main(int argc, char** argv) {
                     if(e.window.event==SDL_WINDOWEVENT_SIZE_CHANGED || e.window.event==SDL_WINDOWEVENT_RESIZED) {
                         if(aspectMode==AspectMode::Auto) {viewportDirty=true;resizeSince=SDL_GetTicks();}
                     } else if(e.window.event==SDL_WINDOWEVENT_FOCUS_LOST) {
-                        aspectChord.reset();modePointerHeld=false;
+                        aspectChord.reset();
                     }
                 } else if (e.type == SDL_CONTROLLERDEVICEADDED) {
                     openController(e.cdevice.which);
@@ -646,8 +650,19 @@ int main(int argc, char** argv) {
             int k = scriptKeys[f - 2];
             game.key(EV_KEY_RELEASE, k);
         }
+        if(scriptLanguages.count(f)) Locale::setLanguage(scriptLanguages[f],false);
+        if(f==titleAt && !game.returnToTitle()) return 1;
         auto serviceStatus=(!headless)?services::status():services::Status{};
         if(!headless && serviceStatus.quitRequested) break;
+        if(!headless && serviceStatus.restoreReady && !serviceStatus.busy) {
+            // Release the old guest state before swapping files; destructors may touch old saves.
+            if(!game.returnToTitle()) {LOGE("[restore] Cannot safely release guest state\n");game.quit=true;break;}
+            if(services::applyPendingRestore()) {
+                if(!game.returnToTitle()) {game.quit=true;break;}
+                serviceui::restoredToTitle();dirMgr=DirectionManager{};aspectChord.reset();
+                gamePointerHeld=false;wasModal=false;
+            }
+        }
         if(!headless && serviceStatus.restartRequired && !serviceui::active()) serviceui::open();
         bool modal=!headless && serviceui::active();
         if(modal && !wasModal) {
@@ -677,7 +692,7 @@ int main(int argc, char** argv) {
             SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
             SDL_RenderClear(ren);
             SDL_RenderCopy(ren, tex, nullptr, &dst);
-            drawAspectButton(ren,aspectMode,winW,winH);
+
             serviceui::draw(ren,winW,winH);
             if(!dumpUi.empty() && f==frames-1) {
                 Screen capture;SDL_GetRendererOutputSize(ren,&capture.w,&capture.h);

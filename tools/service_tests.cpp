@@ -3,6 +3,7 @@
 #include "service_net.h"
 #include "services.h"
 #include "service_ui.h"
+#include "localization.h"
 #include "input_mapping.h"
 #include "hle/hle.h"
 #include "vendor/json.hpp"
@@ -103,6 +104,10 @@ int main(int argc,char** argv) {
         writeText((temporary/"services.json").string(),"{\"check_updates\":false}");
         writeText((temporary/"cloud_auth.json").string(),"{\"refresh_token\":\"fake\",\"access_token\":\"fake\",\"expires_at\":9999999999}");
         init(temporary.string(),"not-launched",argc>1?argv[1]:"assets");
+        Locale::init(argc>1?argv[1]:"assets",temporary.string(),"pt-BR");
+        require(Locale::text("Warrior")=="Guerreiro","PT-BR dictionary missing");
+        require(Locale::glyph(0xe7,12) && !Locale::glyph(0xe7,12)->alpha.empty(),"Latin accent rasterizer failed");
+        Locale::setLanguage("en",false);require(Locale::text("Warrior")=="Warrior","live English switch failed");
         remotePackage=package;
         refreshBackup();waitTask();require(status().backupExists,"Drive backup query");
         serviceui::init(resourcePath("ui_font.ttf"),[](){},[](){return AspectMode::Auto;});
@@ -125,11 +130,27 @@ int main(int argc,char** argv) {
             SDL_SaveBMP(surface,(capture/name).string().c_str());SDL_FreeSurface(surface);
         };
         saveImage(960,720,"cloud-landscape.bmp");saveImage(480,800,"cloud-portrait.bmp");
+        serviceui::open();Locale::setLanguage("pt-BR",false);
+        saveImage(1280,720,"settings-switch.bmp");
+        SDL_setenv("HL5_UI_LAYOUT_ANDROID","1",1);
+        saveImage(1440,3200,"settings-android-portrait.bmp");saveImage(3200,1440,"settings-android-landscape.bmp");
+        SDL_setenv("HL5_UI_FONT_FALLBACK","1",1);saveImage(1280,720,"settings-font-fallback.bmp");
+        SDL_setenv("HL5_UI_FONT_FALLBACK","",1);SDL_setenv("HL5_UI_LAYOUT_ANDROID","",1);
+        // Empty environment values are removed below; draw uses nonempty checks.
+        for(int i=0;i<5;i++) {key(SDLK_DOWN);}
+        key(SDLK_RETURN);
+        require(Locale::language()=="en","Settings language toggle failed");
         uploadBackup();waitTask();require(uploads==1,"Drive upload route");
         checkUpdate(true);waitTask();require(status().updateAvailable,"release update not found");
         corruptDownload=true;downloadUpdate();waitTask();require(!status().downloadReady,"corrupt update accepted");
         corruptDownload=false;downloadUpdate();waitTask();require(status().downloadReady,"valid download rejected");
-        restoreBackup();waitTask();require(status().restartRequired,"restore must require restart");
+        writeText((temporary/"internal/kickass").string(),"old in-memory campaign");
+        auto beforeRestore=readSaves(temporary.string());
+        restoreBackup();waitTask();require(status().restoreReady,"restore must stage main-thread handoff");
+        require(readSaves(temporary.string())==beforeRestore,"worker wrote saves before native state teardown");
+        require(applyPendingRestore(),"main-thread restore failed");
+        require(!status().restartRequired && !status().quitRequested && !status().restoreReady,"restore requested process restart");
+        serviceui::restoredToTitle();require(!serviceui::active(),"restore left modal open");
         serviceui::draw(renderer,480,800);saveImage(480,800,"restore-complete.bmp");
         require(readSaves(temporary.string())==original,"Drive restore changed file content");
         serviceui::shutdown();shutdown();SDL_DestroyRenderer(renderer);SDL_DestroyWindow(window);SDL_Quit();

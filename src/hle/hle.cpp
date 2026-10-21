@@ -1,6 +1,8 @@
 #include "hle.h"
 #include "../audio/audio.h"
 #include "../core/trans.h"
+#include "../localization.h"
+#include "../service_data.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdarg>
@@ -34,6 +36,7 @@
 
 // ---------------------------------------------------------------- globals
 static Game* G = nullptr;
+static bool titlePainted=false;
 static std::string g_apkDir, g_dataDir;
 static u32 g_errnoAddr = 0, g_stackGuard = 0;
 static const int VFS_FAKE_FD = 900;
@@ -927,6 +930,20 @@ bool Game::resizeViewport(int width, int height) {
     return screen.w==width && screen.h==height;
 }
 
+bool Game::returnToTitle() {
+    auto found=img.exports.find("_ZN9BaseState11ChangeStateEia");
+    if(found==img.exports.end() || found->second!=0x142838 || gm::r32(found->second)!=0xe92d47f0) {
+        LOGE("[restore] Unsupported native state transition\n");return false;
+    }
+    g_viewportRepaint=false;g_lastPaintedMap=0;
+    // Native factory state 5 is StateMainMenu; substate 3 loads the title.
+    // ChangeState owns release/destruction of the entire old state stack.
+    cpu.call(found->second,{0,5,3});
+    LOGI("[restore] Returned to native title; slot data reloaded\n");
+    return true;
+}
+
+static void drawTitleText(Screen&);
 void Game::frame() {
     static auto lastTime = std::chrono::steady_clock::now();
     static double remainderMs = 0;
@@ -940,8 +957,124 @@ void Game::frame() {
     remainderMs-=wholeMs;
     g_simTimeMs+=wholeMs;
     cpu.call(sym("Java_co_kr_eamobile_CletEntry_nativeLoop"), {g_env, g_thiz});
+    if(titlePainted && screen.w>0)drawTitleText(screen);
 }
 void Game::key(int type, int k) { cpu.call(sym("Java_co_kr_eamobile_CletEntry_nativeKeyHandleEvent"), {g_env, g_thiz, (u32)type, (u32)k, 0}); }
 void Game::touch(int type, int x, int y, int id) { cpu.callv(sym("Java_co_kr_eamobile_CletEntry_nativeTouchHandleEvent"), {g_env, g_thiz, (u32)type, (u32)x, (u32)y, (u32)id}); }
 void Game::pause() { cpu.call(sym("Java_co_kr_eamobile_CletEntry_nativePauseApp"), {g_env, g_thiz}); }
 void Game::resume() { cpu.call(sym("Java_co_kr_eamobile_CletEntry_nativeResumeApp"), {g_env, g_thiz}); }
+
+
+struct TextClip {u32 gc;u32 top,bottom;int limitTop,limitBottom;};
+static std::vector<TextClip> textClips;
+static std::vector<std::pair<int,int>> classTextClips;
+void beginCoreText(Cpu& c) {
+    auto value=gm::cstr(c.arg(5));int y=int(c.r[3]),height=gm::r8(c.r[0]+0x45)+2;
+    bool description=value.rfind("Equipment used:",0)==0 || value.rfind("Equipamento utilizado:",0)==0;
+    classTextClips.emplace_back(description?y:-1,description?y+5*height:-1);
+}
+void endCoreText() {if(!classTextClips.empty())classTextClips.pop_back();}
+
+// UTF-8 Latin-1 accents occupy two bytes, like the original CP949 glyph path,
+// but use the ASCII advance. Keep the original pixel font for every ASCII glyph.
+bool handleLatinFontHook(Cpu& c,u32 pc) {
+    if(pc==0x13cf00) {
+        int top=-1,bottom=-1,y=int(c.arg(4));
+        if(!textClips.empty()) {top=textClips.back().limitTop;bottom=textClips.back().limitBottom;}
+        if(!classTextClips.empty() && classTextClips.back().first>=0) {
+            top=std::max(top,classTextClips.back().first);bottom=bottom<0?classTextClips.back().second:std::min(bottom,classTextClips.back().second);
+        }
+        if(top>=0 && (y<top || y>=bottom)) {
+            u32 p=c.arg(5);c.r[0]=gm::r8(c.r[5]+((gm::r8(p)&0x80)?70:71));
+            c.r[15]=c.r[14];return true;
+        }
+    }
+    if(!Locale::portuguese()) return false;
+    if(pc==0x141c64) {
+        // Typewriter memcpy must never leave half of an accented UTF-8 character.
+        while(c.r[2] && (gm::r8(c.r[1]+c.r[2])&0xc0)==0x80)c.r[2]--;
+        return false;
+    }
+    auto latin=[](u32 p) {return p>=0x1000 && p+1<gm::MEM_SIZE &&
+        (gm::r8(p)==0xc2 || gm::r8(p)==0xc3) && (gm::r8(p+1)&0xc0)==0x80;};
+    static std::map<u32,u16> colors;
+    static std::map<u32,u8> alphas;
+    if(pc==0x141320) {if(!gm::r8(c.r[0]+0x48))colors[c.r[0]]=u16(c.r[1]);return false;}
+    if(pc==0x14126c) {alphas[c.r[0]]=u8(c.r[1]);return false;}
+    u32 font=0,p=0,reg=0;
+    switch(pc) {
+        case 0x140ee8:font=c.r[9];p=c.r[10]+c.r[5];reg=0;break;
+        case 0x140f6c:font=c.r[6];p=c.r[5]+c.r[8];reg=3;break;
+        case 0x141510:font=c.r[5];p=c.r[6]+c.r[4];reg=3;break;
+        case 0x14178c:font=c.r[5];p=c.r[6]+c.r[4];reg=10;break;
+        case 0x14170c:font=c.r[5];p=c.r[6]+c.r[4];reg=3;break;
+        default:break;
+    }
+    if(font && latin(p)) {c.r[reg]=u32(s32(int8_t(gm::r8(font+71))));c.r[15]=pc+4;return true;}
+    if(pc!=0x13cf00 || c.arg(6)!=2 || !latin(c.arg(5)) || c.r[14]!=0x141808)return false;
+    font=c.r[5];p=c.arg(5);
+    int advance=std::max(1,int(int8_t(gm::r8(font+71))));
+    auto* g=Locale::glyph(((gm::r8(p)&31)<<6)|(gm::r8(p+1)&63),gm::r8(font+0x44));
+    u32 graphic=gm::r32(sym("_lcdG")),surface=graphic?gm::r32(graphic):0;
+    if(g && surface) {
+        int w=gm::r32(surface),h=gm::r32(surface+4),pitch=gm::r32(surface+8),bpp=gm::r32(surface+12);
+        u32 pixels=gm::r32(surface+16),gc=c.r[1];
+        if(w>0 && w<=1280 && h>0 && h<=1280 && bpp==16 && pitch>=w*2 && pixels>=0x1000 && u64(pixels)+u64(pitch)*h<=gm::MEM_SIZE) {
+            int left=std::max(0,int(gm::r32(gc+4))),top=std::max(0,int(gm::r32(gc+8)));
+            int right=std::min(w,int(gm::r32(gc+12))),bottom=std::min(h,int(gm::r32(gc+16)));
+            int x=int(c.r[3])+(advance-g->width)/2,y=int(c.arg(4))+g->ascent+g->yoff;
+            u16 color=colors.count(font)?colors[font]:u16(gm::r32(font+4));
+            int opacity=alphas.count(font)?alphas[font]:255;
+            for(int gy=0;gy<g->height;gy++)for(int gx=0;gx<g->width;gx++) {
+                int dx=x+gx,dy=y+gy;if(dx<left || dx>=right || dy<top || dy>=bottom)continue;
+                int a=int(g->alpha[gy*g->width+gx])*opacity/255;if(!a)continue;
+                u32 address=pixels+dy*pitch+dx*2;u16 d=gm::r16(address);
+                int red=(((color>>11)&31)*a+((d>>11)&31)*(255-a)+127)/255;
+                int green=(((color>>5)&63)*a+((d>>5)&63)*(255-a)+127)/255;
+                int blue=((color&31)*a+(d&31)*(255-a)+127)/255;
+                gm::w16(address,u16((red<<11)|(green<<5)|blue));
+            }
+        }
+    }
+    c.r[0]=advance;c.r[15]=c.r[14];return true;
+}
+
+
+void beginBoundedText(Cpu& c) {
+    u32 graphic=gm::r32(sym("_lcdG")),gc=graphic+12;
+    int lines=int(c.arg(5)),y=int(c.r[3]),height=gm::r8(c.r[0]+0x45)+2;
+    TextClip clip{gc,gm::r32(gc+8),gm::r32(gc+16),int(gm::r32(gc+8)),int(gm::r32(gc+16))};
+    if(lines>0 && lines<100 && height>2 && height<64) {
+        clip.limitTop=std::max(int(clip.top),y);clip.limitBottom=std::min(int(clip.bottom),y+lines*height);
+        gm::w32(gc+8,u32(clip.limitTop));gm::w32(gc+16,u32(clip.limitBottom));
+    }
+    textClips.push_back(clip);
+}
+void endBoundedText() {
+    if(textClips.empty())return;
+    auto clip=textClips.back();textClips.pop_back();
+    gm::w32(clip.gc+8,clip.top);gm::w32(clip.gc+16,clip.bottom);
+}
+void notifyTitlePaint() {titlePainted=true;}
+void clearTitlePaint() {titlePainted=false;}
+static void drawTitleText(Screen& screen) {
+    auto draw=[&](const std::string& value,int y,int height,bool clear) {
+        int advance=std::max(4,height/2),x=(screen.w-int(value.size())*advance)/2;
+        if(clear)for(int dy=std::max(0,y-1);dy<std::min(screen.h,y+height+2);dy++)
+            for(int dx=std::max(0,x-8);dx<std::min(screen.w,x+int(value.size())*advance+8);dx++)screen.px[dy*screen.w+dx]=0xff000000;
+        for(unsigned char c:value) {
+            auto* g=Locale::glyph(c,height);if(!g){x+=advance;continue;}
+            for(int gy=0;gy<g->height;gy++)for(int gx=0;gx<g->width;gx++) {
+                int dx=x+gx,dy=y+g->ascent+g->yoff+gy;if(dx<0||dx>=screen.w||dy<0||dy>=screen.h)continue;
+                unsigned a=g->alpha[gy*g->width+gx];u32 d=screen.px[dy*screen.w+dx];
+                auto channel=[&](int shift){return ((((d>>shift)&255)*(255-a)+235*a)/255)<<shift;};
+                screen.px[dy*screen.w+dx]=0xff000000|channel(16)|channel(8)|channel(0);
+            }
+            x+=advance;
+        }
+    };
+    // Original title prompt/version are sprites, so replace them after composition.
+    if(Locale::portuguese())draw("Toque para continuar",screen.h-61,12,true);
+    for(int y=std::max(0,screen.h-17);y<screen.h;y++)for(int x=0;x<screen.w;x++)screen.px[y*screen.w+x]=0xff000000;
+    draw("v"+std::string(services::Version),screen.h-15,12,false);
+}

@@ -1,13 +1,30 @@
-# Heroes Lore 5: Covenant of Darkness
+<div align="center">
 
-### Recompilação nativa para Windows, Linux, Android e Nintendo Switch
+<img src="switch/icon.jpg" alt="Heroes Lore 5" width="144" />
+
+# ⚔️ Heroes Lore 5: Covenant of Darkness
+
+### Recompilação nativa · C++17 + SDL2
+
+**Windows · Linux / Steam Deck · Android · Nintendo Switch**
+
+</div>
 
 [![Build multiplataforma](https://github.com/davidkalil10/Heroes-Lore-5-Covenant-of-Darkness-Recomp/actions/workflows/build.yml/badge.svg)](https://github.com/davidkalil10/Heroes-Lore-5-Covenant-of-Darkness-Recomp/actions/workflows/build.yml)
 [![Releases](https://img.shields.io/github/v/release/davidkalil10/Heroes-Lore-5-Covenant-of-Darkness-Recomp)](https://github.com/davidkalil10/Heroes-Lore-5-Covenant-of-Darkness-Recomp/releases)
 
-Port de **Heroes Lore 5: Covenant of Darkness** (EA Mobile Korea), com interface
-e diálogos em inglês, áudio, controles modernos e expansão real do campo de visão.
+[![C++17](https://img.shields.io/badge/C%2B%2B-17-blue)](#-compilar-e-validar)
+[![Idiomas](https://img.shields.io/badge/Idiomas-PT--BR%20%7C%20English-green)](#-idioma-em-tempo-real)
+[![Plataformas](https://img.shields.io/badge/Plataformas-Windows%20%7C%20Linux%20%7C%20Android%20%7C%20Switch-8a62d9)](#-downloads-e-plataformas)
+
+Port de **Heroes Lore 5: Covenant of Darkness** (*EA Mobile Korea*), com
+**português do Brasil e inglês**, áudio, controles modernos, saves na nuvem
+e expansão real do campo de visão.
 O núcleo ARM32 original roda em uma camada C++17 compartilhada pelas plataformas.
+
+## 📥 Downloads e plataformas
+
+Os pacotes prontos para jogar ficam em **[Releases](https://github.com/davidkalil10/Heroes-Lore-5-Covenant-of-Darkness-Recomp/releases/latest)**.
 
 | Plataforma | Pacote |
 | --- | --- |
@@ -16,22 +33,28 @@ O núcleo ARM32 original roda em uma camada C++17 compartilhada pelas plataforma
 | Android | APK universal ou ARM64 |
 | Nintendo Switch | Homebrew `.nro` com recursos embutidos |
 
-## Novidades da versão 1.1.0
+## ✨ Recursos e novidades da v1.1.1
 
-- **Settings** com verificação de atualizações e backup de saves no Google Drive.
-- Consulta às releases do GitHub ao iniciar, sem bloquear o jogo; consulta manual e instalação mediante confirmação.
-- Login do Google por código no celular/PC, como nos outros ports da série.
-- Backup do HL5 compartilhado entre plataformas, com validação e cópia local de segurança antes de restaurar.
-- **Auto** como aspect ratio padrão para uma instalação nova. Preferências já escolhidas continuam salvas.
-- **Switch: A para atacar/confirmar**, B para cancelar, X/Y ajustados aos rótulos Nintendo.
-- **C / Tab** no teclado e **Select / −** no controle para a tecla `#`, que troca a fileira de habilidades.
+- 🌎 **PT-BR como idioma padrão:** textos de menus, diálogos, missões, itens e habilidades, com acentos. Inglês continua disponível.
+- 🔀 **Troca de idioma durante o jogo:** altere em Configurações; o diálogo e o menu abertos são atualizados sem reiniciar ou sair do mapa.
+- 🖥️ **Auto / Wide / Native:** expansão real do cenário, preservando as proporções dos sprites. Auto acompanha janela e orientação.
+- 🎮 **Teclado, gamepad e toque:** controles Nintendo seguem os rótulos A/B e X/Y; Select/− troca a fileira de habilidades.
+- 🎵 **Áudio e execução otimizados:** mixer Ogg/MP3, regiões ARM recompiladas, índice de arquivos e relógio corrigido.
+- ☁️ **Google Drive entre plataformas:** envie o progresso salvo em um aparelho e restaure em outro. Restaurar agora **volta ao título sem fechar o app**.
+- 🔄 **Atualizações pelo GitHub:** consulta ao abrir ou pelo menu, download validado e instalação com confirmação.
+- ⚙️ **Configurações pela engrenagem:** botão no canto superior direito, F10 ou R3. Proporção de tela fica dentro do menu.
+- 📱 **Painel maior no Android** e carregamento de fonte corrigido no Switch, com fonte de emergência para falhas de carregamento/renderização.
+- 🏷️ **Versão instalada no título** e no painel de configurações; metadados atualizados em todas as plataformas.
 
-O autor confirmou a execução fluida, áudio e modos de tela da integração anterior
-no PC, Android e Switch. As funções de nuvem e atualização desta versão têm testes
-locais/CI; o login real, a troca de saves entre aparelhos e a instalação nos
-dispositivos ainda precisam de validação prática.
+O autor confirmou desempenho, áudio, modos de tela e backup/restauração entre
+aparelhos na versão anterior. A v1.1.1 tem testes locais automatizados; a
+autoatualização e os novos ajustes de Android/Switch devem ser conferidos nos
+dispositivos. A tradução foi preparada com assistência automática e revisão de
+termos e formatação; sugestões de texto/contexto são bem-vindas durante a campanha.
 
-## Como jogar
+---
+
+## 🚀 Como jogar
 
 Baixe o pacote da sua plataforma em [Releases](https://github.com/davidkalil10/Heroes-Lore-5-Covenant-of-Darkness-Recomp/releases).
 Os [artefatos do Actions](https://github.com/davidkalil10/Heroes-Lore-5-Covenant-of-Darkness-Recomp/actions)
@@ -42,15 +65,27 @@ também permitem testar mudanças publicadas na `main` antes de uma release.
 3. **Android:** instale o APK adequado. Atualizações devem manter a mesma assinatura; não desinstale o app para atualizar, pois isso pode apagar os dados locais.
 4. **Switch:** coloque o NRO em `/switch/heroes_lore_5/` no SD e abra pelo Homebrew Menu. Os saves ficam separados do NRO.
 
-## Settings
+## ⚙️ Configurações
 
-Abra pelo botão **SETTINGS** no canto superior esquerdo, pela tecla **F10**,
+Abra pela **engrenagem ⚙️ no canto superior direito**, pela tecla **F10**,
 ou clicando o analógico direito (**R3**). O menu de opções original na tela de
 título também dá acesso ao painel; as opções originais permanecem disponíveis.
 Use setas/D-pad/analógico para navegar, confirmar para escolher e voltar para fechar.
 Mouse e toque também funcionam. O jogo fica pausado enquanto o painel está aberto.
 
-### Atualizações pelo GitHub
+## 🌎 Idioma em tempo real
+
+Em **Configurações → Idioma**, alterne entre **Português (Brasil)** e **English**.
+A escolha vale imediatamente para os textos exibidos e é salva neste aparelho.
+Não é necessário fechar o jogo nem trocar de mapa; saves e progresso são os mesmos
+nos dois idiomas. Uma instalação sem preferência salva começa em PT-BR.
+
+Os recursos em inglês continuam como base canônica. O dicionário PT-BR é aplicado
+ao desenhar o texto, incluindo números e mensagens formatadas; ele acompanha todos
+os pacotes. A fonte original permanece nos caracteres ASCII e os acentos usam uma
+fonte complementar. Detalhes em [docs/LOCALIZATION.md](docs/LOCALIZATION.md).
+
+## 🔄 Atualizações pelo GitHub
 
 A consulta na abertura vem ativada e pode ser desligada em Settings. Se uma versão
 estável mais recente estiver disponível, aparece um indicador no botão Settings.
@@ -67,14 +102,14 @@ release. Falta de internet não impede jogar. A verificação utiliza **releases
 publicadas**, não os artefatos de cada push na `main`. A instalação automática
 Linux é destinada ao AppImage; builds nativas de desenvolvimento usam atualização manual.
 
-### Cloud save: continuar em outra plataforma
+## ☁️ Cloud save: continuar em outra plataforma
 
 1. **Salve o progresso dentro do jogo** antes de abrir Settings.
 2. Entre em **Cloud save - Google Drive → Connect Google Drive**.
 3. Abra no celular ou computador o endereço indicado, digite o código e autorize a mesma conta Google nas plataformas que pretende usar.
 4. No aparelho de origem, escolha **Upload saved progress** e confirme a substituição do backup da nuvem.
 5. No aparelho de destino, consulte a data em **Refresh cloud backup**, escolha **Restore cloud backup** e confirme.
-6. **Feche e reabra o jogo** para carregar o progresso restaurado.
+6. O jogo **volta ao título no mesmo aplicativo**. Escolha o slot para continuar o progresso restaurado.
 
 O arquivo `heroes_lore_5_save.json` fica na pasta **Heroes Lore - 5** do Drive.
 É exclusivo do HL5: não mistura nem converte os saves de HL1, HL2 ou Zero.
@@ -85,10 +120,10 @@ enviar ou restaurar.
 
 Antes de restaurar, o aplicativo valida o formato e os checksums. A versão local
 anterior fica em `data/save-backups/` (no Android/Linux, dentro da raiz de dados
-própria da plataforma). Depois da restauração, o jogo exige reabertura para que
-a memória antiga não volte a gravar sobre os arquivos recuperados.
+própria da plataforma). A restauração libera o estado antigo antes de trocar os arquivos e recarrega
+os slots no título, evitando que o progresso antigo sobrescreva o backup restaurado.
 
-## Tela: Auto, Wide e Native
+## 🖥️ Tela: Auto, Wide e Native
 
 | Modo | Área renderizada |
 | --- | --- |
@@ -97,7 +132,7 @@ a memória antiga não volte a gravar sobre os arquivos recuperados.
 | **Native** | Campo de visão original, 240×400, com bordas quando necessário. |
 
 Sprites mantêm a proporção: o jogo desenha mais cenário em vez de esticar a imagem.
-Alterne em Settings, pelo botão **AUTO / NATIVE / WIDE**, por **F9**, ou segurando
+Alterne em **Configurações → Proporção de tela**, por **F9**, ou segurando
 **Select + Start** (**− e +** no Switch). A preferência fica salva.
 **F11 / Alt+Enter** alterna tela cheia no PC. O bloqueio de rotação do Android é respeitado.
 
@@ -106,7 +141,7 @@ limite de 1280 pixels por dimensão para controlar memória e custo de desenho.
 `hl5.exe --aspect auto` força o modo naquela execução sem sobrescrever a preferência.
 Detalhes: [docs/DISPLAY.md](docs/DISPLAY.md).
 
-## Controles
+## 🎮 Controles
 
 | Ação | Teclado | Controle Xbox / padrão | Nintendo Switch |
 | --- | --- | --- | --- |
@@ -129,7 +164,7 @@ botões e não troca habilidades nem abre o menu. Controles Nintendo Switch Pro
 reconhecidos no PC também usam os rótulos Nintendo. Toque/clique e arraste para o
 direcional virtual, ou use os botões da interface do jogo.
 
-## Compilar e validar
+## 🛠️ Compilar e validar
 
 Windows requer MSYS2 UCRT64, GCC, CMake, Ninja e SDL2. O cliente de rede usa WinHTTP.
 
@@ -140,6 +175,8 @@ ctest --test-dir build --output-on-failure
 python tools/verify_runtime.py --exe build/hl5.exe
 python tools/verify_aspect.py --exe build/hl5.exe
 python tools/verify_services.py
+python tools/verify_localization.py --exe build/hl5.exe
+python tools/bump_version.py --check
 ```
 
 No Linux, instale `build-essential cmake ninja-build libsdl2-dev libcurl4-openssl-dev`
@@ -155,7 +192,23 @@ backup/restauração com serviços simulados, controles e empacotamento sem dado
 pessoais. No Windows, o instalador também é testado com sucesso, rollback e
 rejeição de caminhos inválidos. Esses testes não acessam a conta Google do jogador.
 
-## Continuidade do projeto
+## 🏷️ Versionamento e releases
+
+O script mantém a versão do atualizador, o nome/código Android e os metadados
+Switch em acordo. Não cria commit, tag ou push automaticamente.
+
+```sh
+python tools/bump_version.py --current
+python tools/bump_version.py patch --dry-run
+python tools/bump_version.py patch
+# Também aceita minor, major ou uma versão explícita: 1.2.0
+```
+
+Depois de validar as mudanças, publique a tag correspondente `vX.Y.Z` no GitHub.
+O Actions compila as quatro plataformas e publica os seis arquivos da release;
+só então os dispositivos podem detectar a atualização.
+
+## 📚 Continuidade do projeto
 
 | Documento | Conteúdo |
 | --- | --- |
@@ -164,8 +217,10 @@ rejeição de caminhos inválidos. Esses testes não acessam a conta Google do j
 | [docs/RUNTIME.md](docs/RUNTIME.md) | CPU, áudio, desempenho e diagnóstico |
 | [docs/DISPLAY.md](docs/DISPLAY.md) | Expansão real de tela e câmera |
 | [docs/SERVICES.md](docs/SERVICES.md) | Atualizador, Google Drive, saves, versões e testes |
+| [docs/LOCALIZATION.md](docs/LOCALIZATION.md) | PT-BR/inglês ao vivo, fontes, corpus e verificação |
 
-A tradução usa `data/dict.bin` e substituições em `assets_override/`.
+A base coreano → inglês usa `data/dict.bin` e `assets_override/`. O PT-BR usa
+`assets/locales/pt-BR.json`, com cache editorial em `lang/pt_br/phrases.json`.
 Os scripts `tools/translate_all.py` e `tools/translate_gameplay_tables.py`
 mantêm o pipeline de tradução existente. O código principal está em `src/`;
 `codex_lab/` é apenas laboratório/backup local e não alimenta releases.

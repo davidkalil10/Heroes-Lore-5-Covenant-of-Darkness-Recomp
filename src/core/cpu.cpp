@@ -3,6 +3,13 @@
 extern std::string g_overrideDir;
 extern void refreshViewportMap(Cpu& cpu);
 extern void notifyPortSettings();
+extern bool handleLatinFontHook(Cpu&,u32);
+extern void beginBoundedText(Cpu&);
+extern void beginCoreText(Cpu&);
+extern void endCoreText();
+extern void endBoundedText();
+extern void notifyTitlePaint();
+extern void clearTitlePaint();
 extern void refreshViewportDialog(Cpu& cpu);
 extern bool fastVfsLookup(u32 manager,u32 name,u32 outOffset,u32& size);
 // Tinted/alpha-mixed RGB565 sprite pixel used by the engine's palettized sprite blitters (0x59664 / 0x59d68).
@@ -32,7 +39,7 @@ static inline bool isHook(u32 pc) {
     if (g_hookMap.empty()) {
         g_hookMap.assign(0x400000, 0);
         static const u32 pcs[] = {0x1417a4, 0x11b348, 0x11feac, 0x11febc, 0x4e03c, 0x4d9f0, 0xc3bbc, 0xc42a0,
-                                  0x11a1ec, 0x6afd0, 0xb129c, 0x14c7e4, 0x418dc, 0x41878, 0x41818, 0x41d78, 0x41940, 0x144db8, 0x145754, 0x59664, 0x59d68, 0x4e7e4, 0x5371c, 0x538c8};
+                                  0x41334,0x41470,0x42838,0x11d4b0,0x11db18,0x41a94,0x41c64,0x41510,0x40ee8,0x40f6c,0x4178c,0x4170c,0x3cf00,0x41320,0x4126c,0x41b00, 0x11a1ec, 0x6afd0, 0xb129c, 0x14c7e4, 0x418dc, 0x41878, 0x41818, 0x41d78, 0x41940, 0x144db8, 0x145754, 0x59664, 0x59d68, 0x4e7e4, 0x5371c, 0x538c8};
         for (u32 p : pcs) g_hookMap[p >> 2] = 1;
     }
     u32 o = pc - 0x00100000;
@@ -139,6 +146,16 @@ void Cpu::step() {
     u32 ins = gm::r32(pc);
     if (g_prof) g_profHist[(pc - 0x00100000) >> 2]++;
     if (isHook(pc)) switch (pc) {
+        case 0x141334:beginCoreText(*this);break;
+        case 0x141470:endCoreText();break;
+        case 0x142838:case 0x21d4b0:clearTitlePaint();break;
+        case 0x21db18:notifyTitlePaint();break;
+        case 0x141a94:endBoundedText();break;
+        case 0x141c64:case 0x141510:
+        case 0x140ee8:case 0x140f6c:case 0x14178c:case 0x14170c:
+        case 0x13cf00:case 0x141320:case 0x14126c:
+            if(handleLatinFontHook(*this,pc))return;
+            break;
         case 0x21a1ec: // StateMainMenu::DrawOption: expose host Settings alongside original options.
             notifyPortSettings();
             break;
@@ -386,7 +403,18 @@ void Cpu::step() {
             if (newPtr != strPtr) gm::w32(r[13] + 0, newPtr);
             break;
         }
+        case 0x00100000 + 0x41b00: { // BFont::DrawTextField: translate full live dialogue before wrapping.
+            u32 address=gm::r32(r[13]+8);u32 translated=Trans::translatePtr(address);
+            if(translated!=address) {
+                auto before=gm::cstr(address).size(),after=gm::cstr(translated).size();
+                s32 visible=(s32)gm::r32(r[13]+16);
+                if(visible>0 && before) gm::w32(r[13]+16,(u32)std::min<size_t>(after,(size_t(visible)*after+before-1)/before));
+                gm::w32(r[13]+8,translated);
+            }
+            break;
+        }
         case 0x00100000 + 0x41940: { // BFont::DrawTextLine
+            beginBoundedText(*this);
             u32 strPtr = gm::r32(r[13] + 8);
             u32 newPtr = Trans::translatePtr(strPtr);
             if (newPtr != strPtr) gm::w32(r[13] + 8, newPtr);

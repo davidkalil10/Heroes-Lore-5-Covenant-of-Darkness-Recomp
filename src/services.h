@@ -6,7 +6,7 @@ namespace services {
 struct Status {
     bool busy=false, connected=false, backupExists=false, updateAvailable=false;
     bool downloadReady=false, restartRequired=false, quitRequested=false;
-    bool autoCheck=true;
+    bool autoCheck=true, restoreReady=false;
     std::string message, userCode, verificationUrl, backupDate, backupSummary;
     Release release;
 };
@@ -22,6 +22,7 @@ void logout();
 void refreshBackup();
 void uploadBackup();
 void restoreBackup();
+bool applyPendingRestore();
 void setAutoCheck(bool enabled);
 void requestQuit();
 bool romfsWasReleased();

@@ -76,3 +76,6 @@ scratch/
 /data/updates/
 /data/save-backups/
 /data/restore-*/
+
+# Device language preference
+language.ini

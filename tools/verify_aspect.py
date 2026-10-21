@@ -47,7 +47,7 @@ def main():
         temporary = Path(temporary)
         dump = temporary / 'frames'
         command = [str(args.exe.resolve()), '--apk', str(root / 'reference/extracted_apk'),
-                   '--data', str(temporary / 'saves'), '--headless', '--frames', '2100',
+                   '--data', str(temporary / 'saves'), '--headless', '--language', 'en', '--frames', '2100',
                    '--window', '1280x720', '--aspect', 'native', '--dump', str(dump),
                    '--dump-every', '100', *keys, *modes]
         log = reports / 'transitions.log'
@@ -92,7 +92,7 @@ def main():
         for n, frame in enumerate(range(1000, 1900, 15)):
             stress += ['--aspect-at', f"{frame}:{('wide', 'native')[n % 2]}"]
         command = [str(args.exe.resolve()), '--apk', str(root / 'reference/extracted_apk'),
-                   '--data', str(temporary / 'stress-saves'), '--headless', '--frames', '2100',
+                   '--data', str(temporary / 'stress-saves'), '--headless', '--language', 'en', '--frames', '2100',
                    '--aspect', 'native', *keys, *stress]
         with (reports / 'stress.log').open('w', encoding='utf-8') as output:
             subprocess.run(command, cwd=root, env=env, stdout=output, stderr=output, check=True, timeout=180)

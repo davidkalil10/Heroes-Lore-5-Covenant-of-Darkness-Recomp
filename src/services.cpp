@@ -30,6 +30,7 @@ static SDL_Thread* worker=nullptr;
 static std::atomic<bool> cancelled{false};
 static std::string dataRoot,executable,resources,accessToken,refreshToken,folderId,fileId,fileVersion;
 static uint64_t tokenExpiry=0;
+static SaveFiles pendingRestore;
 static bool networkReady=false,romfsReleased=false;
 bool romfsWasReleased() {return romfsReleased;}
 static const std::string drive="https://www.googleapis.com/drive/v3/files";
@@ -37,7 +38,7 @@ static const std::string cloudFile="heroes_lore_5_save.json";
 static const std::string cloudFolder="Heroes Lore - 5";
 static void publish(const std::function<void(Status&)>& fn) {std::lock_guard<std::mutex> lock(mutex);fn(state);}
 Status status() {std::lock_guard<std::mutex> lock(mutex);return state;}
-std::string resourcePath(const std::string& name) {return resources+"/"+name;}
+std::string resourcePath(const std::string& name) {return resources+(resources.empty() || resources.back()!='/'?"/":"")+name;}
 static void message(const std::string& text) {publish([&](Status& s){s.message=text;});}
 static std::string authPath() {return dataRoot+"/cloud_auth.json";}
 static json response(const HttpResponse& r) {
@@ -254,10 +255,19 @@ void restoreBackup() {
             throw std::runtime_error("Cloud backup changed. Review its date and confirm restore again.");
         auto r=httpExecute("GET",drive+"/"+fileId+"?alt=media",authHeaders());
         if(r.statusCode!=200) throw std::runtime_error("Could not download backup");
-        auto files=unpackSaves(r.body);
-        auto backup=restoreSaves(dataRoot,files);
-        publish([&](Status& s){s.restartRequired=true;s.message="Save restored! Close and reopen the game to continue. Previous saves were kept in save-backups.";});
+        pendingRestore=unpackSaves(r.body);
+        publish([](Status& s){s.restoreReady=true;s.message="Backup validated. Returning to title...";});
     });
+}
+bool applyPendingRestore() {
+    auto snapshot=status();if(snapshot.busy || !snapshot.restoreReady)return false;
+    try {
+        restoreSaves(dataRoot,pendingRestore);pendingRestore.clear();
+        publish([](Status& s){s.restoreReady=false;s.message="Save restored! Returning to title...";});
+        return true;
+    } catch(const std::exception& error) {
+        publish([&](Status& s){s.restoreReady=false;s.message=error.what();});return false;
+    }
 }
 void requestQuit() {publish([](Status& s){s.quitRequested=true;});}
 void applyUpdate() {

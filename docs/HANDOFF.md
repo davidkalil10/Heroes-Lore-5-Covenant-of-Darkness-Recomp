@@ -74,8 +74,30 @@ Drive backup plus GitHub release update services. See `docs/SERVICES.md` for
 architecture, required tests, recovery, packaging and exact release asset names.
 The existing native options remain reachable when the host panel is closed.
 
-Save restoration uses validated raw guest files with safety backup and mandatory
-app reopen. Do not copy Java RMS or live VM-reload code from HL1/HL2/Zero. No
+Save restoration uses validated raw guest files with safety backup and a main-thread
+native return-to-title handoff; 1.1.1 removes the old mandatory app reopen. Do not copy Java RMS or live VM-reload code from HL1/HL2/Zero. No
 tests authorize/upload real player saves: Drive and download routes are mocked.
-Google login and real cross-device save migration still need user validation,
-as do OS installers/NRO replacement. README was rewritten as the user guide.
+The user confirmed real backup/restore. New return-to-title behavior and
+OS installers/NRO replacement need v1.1.1 device validation. README was rewritten as the user guide.
+
+
+## 1.1.1 continuation — 2026-10-20
+
+User requested and authorized PT-BR preparation with Google Translate. English
+source assets/dict.bin remain untouched. Locale runtime adds 16k+ cached phrases,
+live English/PT-BR switching, Latin-1 accents, dynamic formatted strings and
+language.ini persistence. See docs/LOCALIZATION.md for hooks and diagnostics.
+Title replaces the original version/prompt presentation with installed version
+and localized instruction. Gear replaces the separate aspect button; Android
+panel scales to screen pixels; RomFS font joins and texture creation are fixed.
+
+Cloud worker only stages validated saves. The main loop destroys old state,
+transactionally replaces files, reconstructs native title/slots, and continues
+without process exit. Details and safety ordering are in docs/SERVICES.md.
+
+Version is 1.1.1 / Android code 3. tools/bump_version.py updates all metadata;
+--check detects drift. Added verify_localization.py checks live dialogue roundtrip,
+format preservation, valid UTF-8 and return-to-title with isolated test saves.
+Keep hardware validation distinct: user must test installed 1.1.0 detecting the
+new release, signature-preserving Android upgrade, NRO replacement, Settings text,
+mobile sizing, live language and restored campaign slot selection.

@@ -82,3 +82,10 @@ For future changes, PC checks do not replace Android/Switch tests: check touch/b
 rotation, docked/handheld operation, existing saves, UI, map boundaries and
 performance on larger maps. The user's latest feedback covers performance, audio and aspect modes; the 1.1.0
 services/input changes need their own device validation.
+
+
+### 1.1.1 overlay change
+
+The separate AUTO/NATIVE/WIDE touch button has been removed. Use the upper-right
+gear → Aspect ratio; F9 and Select+Start remain available. Android Settings sizing
+is proportional to the physical window instead of the desktop 740x650 pixel cap.
