@@ -20,14 +20,6 @@ static SDL_Texture* fontTexture=nullptr;
 static stbtt_bakedchar chars[224];
 static std::vector<unsigned char> fontBitmap;
 static bool fontReady=false,pointerConsumed=false,stickHeld=false;
-SDL_Rect settingsButtonRect(int w,int h) {
-    // Stay above the native back/menu button instead of growing with fullscreen.
-    int side=std::clamp(std::min(w,h)/18,24,40);
-#ifdef __ANDROID__
-    side=std::clamp(std::min(w,h)/24,40,72);
-#endif
-    int pad=std::clamp(side/5,4,8);return {w-side-pad,pad,side,side};
-}
 static uint32_t nextCharacter(const std::string& text,size_t& i) {
     unsigned char c=text[i++];if(c<128) return c;
     if((c&0xe0)==0xc0 && i<text.size()) return ((c&31)<<6)|(text[i++]&63);
@@ -172,10 +164,6 @@ bool event(const SDL_Event& e,bool switchButtons) {
         if(pointerConsumed && (e.type==SDL_MOUSEBUTTONUP || e.type==SDL_FINGERUP)) {pointerConsumed=false;return true;}
         if(e.type==SDL_KEYDOWN && e.key.keysym.sym==SDLK_F10 && !e.key.repeat) {open();return true;}
         if(e.type==SDL_CONTROLLERBUTTONDOWN && e.cbutton.button==SDL_CONTROLLER_BUTTON_RIGHTSTICK) {open();return true;}
-        int x=-1,y=-1;
-        if(e.type==SDL_MOUSEBUTTONDOWN) {x=e.button.x;y=e.button.y;}
-        else if(e.type==SDL_FINGERDOWN) {x=int(e.tfinger.x*windowW);y=int(e.tfinger.y*windowH);}
-        if(insideRect(x,y,settingsButtonRect(windowW,windowH))) {open();return true;}
         return false;
     }
     if(e.type==SDL_MOUSEBUTTONDOWN || e.type==SDL_FINGERDOWN) pointerConsumed=true;
@@ -224,18 +212,7 @@ void draw(SDL_Renderer* r,int width,int height) {
         else SDL_Log("Settings font texture: %s",SDL_GetError());
     }
     SDL_SetRenderDrawBlendMode(r,SDL_BLENDMODE_BLEND);
-    auto button=settingsButtonRect(width,height);
-    SDL_SetRenderDrawColor(r,12,20,30,220);SDL_RenderFillRect(r,&button);
-    // Geometry-only gear: available even before the font texture is ready.
-    int cx=button.x+button.w/2,cy=button.y+button.h/2,outer=button.w*3/10,inner=button.w/7;
-    SDL_SetRenderDrawColor(r,225,235,245,255);
-    for(int y=-outer;y<=outer;y++)for(int x=-outer;x<=outer;x++) {
-        int d=x*x+y*y;if(d>=inner*inner && d<=outer*outer)SDL_RenderDrawPoint(r,cx+x,cy+y);
-    }
-    for(int i=0;i<8;i++) {double angle=i*3.141592653589793/4;int s=std::max(3,button.w/8);
-        SDL_Rect tooth{cx+int(std::cos(angle)*outer)-s/2,cy+int(std::sin(angle)*outer)-s/2,s,s};SDL_RenderFillRect(r,&tooth);}
     auto s=services::status();
-    if(s.updateAvailable && !opened) {SDL_SetRenderDrawColor(r,255,200,75,255);SDL_Rect badge{button.x+button.w-8,button.y+2,6,6};SDL_RenderFillRect(r,&badge);}
     if(!opened) return;
     SDL_SetRenderDrawColor(r,0,0,0,185);SDL_RenderFillRect(r,nullptr);
     int panelW=std::min(740,std::max(180,width-24)),panelH=std::min(650,std::max(180,height-24));

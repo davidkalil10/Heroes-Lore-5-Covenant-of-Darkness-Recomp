@@ -97,3 +97,12 @@ Gear dimensions are capped (desktop/Switch 40 pixels, Android 72), with a smalle
 size on compact windows. It stays in the top margin above the native back/menu
 button. UI localization now respects native tile/tab/HUD widths; only overflowing
 HUD text is fitted, never the world viewport or sprites.
+
+### 1.1.3 native Options access
+
+Supersedes the gear sizing rules above: the overlay gear and its hit target are
+removed. Native Options has a footer row at logical (W/2-76,H/2+78), 138x19.
+It scales uniformly with the original 176x200 menu and accepts guest-coordinate
+touch/click. Host panel sizing, viewport expansion, F9 and Select+Start remain.
+The native navigation wraps to the footer before wrapping to the first option.
+F10/R3 still open the host panel directly.

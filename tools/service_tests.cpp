@@ -8,6 +8,7 @@
 #include "hle/hle.h"
 #include "vendor/json.hpp"
 #include <SDL.h>
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <filesystem>
@@ -104,6 +105,26 @@ int main(int argc,char** argv) {
         writeText((temporary/"services.json").string(),"{\"check_updates\":false}");
         writeText((temporary/"cloud_auth.json").string(),"{\"refresh_token\":\"fake\",\"access_token\":\"fake\",\"expires_at\":9999999999}");
         init(temporary.string(),"not-launched",argc>1?argv[1]:"assets");
+        auto extracted=(temporary/"extracted/locales/pt-BR.json").string();
+        auto copyAsset=[&](const std::string& bytes,size_t expected,const std::string& digest){
+            size_t offset=0;
+            return extractAsset(extracted,expected,digest,[&](char* out,int capacity){
+                size_t n=std::min(size_t(capacity),bytes.size()-offset);
+                std::copy_n(bytes.data()+offset,n,out);offset+=n;return int(n);
+            });
+        };
+        std::string oldAsset="old language",newAsset="new language";
+        require(copyAsset(oldAsset,oldAsset.size(),sha256({oldAsset.begin(),oldAsset.end()})),"Initial extraction");
+        require(copyAsset(newAsset,newAsset.size(),sha256({newAsset.begin(),newAsset.end()})),"Same-size OTA asset replacement");
+        require(readText(extracted)==newAsset,"OTA opened old extracted asset");
+        require(!copyAsset("",newAsset.size(),""),"Truncated asset accepted");
+        require(!copyAsset(oldAsset,oldAsset.size(),sha256({newAsset.begin(),newAsset.end()})),"Old source with new digest accepted");
+        require(readText(extracted)==newAsset,"Failed extraction destroyed previous file");
+        Locale::init((temporary/"missing-assets").string(),temporary.string(),"pt-BR");
+        require(Locale::text("Music")=="Música","Embedded native options missing");
+        require(Locale::text("Back to game")=="Voltar ao jogo","Embedded host settings missing");
+        Locale::setLanguage("en",false);require(Locale::text("Music")=="Music","Embedded English switch");
+        Locale::setLanguage("pt-BR",false);require(Locale::text("Music")=="Música","Embedded live Portuguese switch");
         Locale::init(argc>1?argv[1]:"assets",temporary.string(),"pt-BR");
         require(Locale::text("Warrior")=="Guerreiro","PT-BR dictionary missing");
         require(Locale::glyph(0xe7,12) && !Locale::glyph(0xe7,12)->alpha.empty(),"Latin accent rasterizer failed");
@@ -115,11 +136,11 @@ int main(int argc,char** argv) {
         auto* renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_SOFTWARE);
         require(renderer!=nullptr,"SDL test renderer");
         require(!serviceui::active(),"Settings opened without an explicit request");
-        for(auto size:{std::pair<int,int>{640,360},{1280,720},{1920,1080},{3840,2160}}) {
-            auto gear=serviceui::settingsButtonRect(size.first,size.second);
-            require(gear.w<=40 && gear.h<=40,"Fullscreen gear grew past its size limit");
-            require(gear.y+gear.h<size.second*9/100,"Gear overlaps the native menu/back area");
-        }
+        SDL_Event shortcut{};shortcut.type=SDL_CONTROLLERBUTTONDOWN;shortcut.cbutton.button=SDL_CONTROLLER_BUTTON_RIGHTSTICK;
+        require(serviceui::event(shortcut,false) && serviceui::active(),"R3 shortcut missing");
+        key(SDLK_ESCAPE);require(!serviceui::active(),"R3 panel cannot close");
+        key(SDLK_F10);require(serviceui::active(),"F10 shortcut missing");
+        key(SDLK_ESCAPE);require(!serviceui::active(),"F10 panel cannot close");
         for(auto context:{Locale::UiText::Grid,Locale::UiText::Tab}) {
             auto skill=Locale::uiText("SKILL",context);require(skill=="SKILL","English compact labels changed");
         }

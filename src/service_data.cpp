@@ -126,6 +126,36 @@ void writeText(const std::string& path,const std::string& text) {
     std::ofstream f(path,std::ios::binary|std::ios::trunc);
     if(!f || !f.write(text.data(),text.size()) || !(f.flush())) throw std::runtime_error("Cannot write file");
 }
+bool extractAsset(const std::string& path,size_t expectedSize,const std::string& digest,
+                  const std::function<int(char*,int)>& reader) {
+    auto staged=path+".hl5-extract",backup=path+".hl5-previous";
+    bool moved=false;
+    try {
+        fs::create_directories(fs::path(path).parent_path());
+        std::ofstream output(staged,std::ios::binary|std::ios::trunc);
+        if(!output)throw std::runtime_error("Cannot stage asset");
+        char buffer[65536];size_t copied=0;
+        for(;;) {
+            int n=reader(buffer,sizeof(buffer));
+            if(n<0 || n>int(sizeof(buffer)))throw std::runtime_error("Cannot read APK asset");
+            if(!n)break;
+            copied+=size_t(n);if(copied>expectedSize)throw std::runtime_error("Asset size mismatch");
+            if(!output.write(buffer,n))throw std::runtime_error("Cannot write extracted asset");
+        }
+        output.close();if(!output || copied!=expectedSize)throw std::runtime_error("Incomplete asset");
+        if(!digest.empty()) {
+            auto bytes=readText(staged,128*1024*1024);
+            if(sha256({bytes.begin(),bytes.end()})!=digest)throw std::runtime_error("Asset digest mismatch");
+        }
+        if(fs::exists(path)){fs::remove(backup);fs::rename(path,backup);moved=true;}
+        try {fs::rename(staged,path);}catch(...) {if(moved)fs::rename(backup,path);throw;}
+        if(moved){std::error_code ec;fs::remove(backup,ec);}
+        return true;
+    }catch(const std::exception& error) {
+        fprintf(stderr,"[assets] %s: %s\n",path.c_str(),error.what());
+        std::error_code ec;fs::remove(staged,ec);return false;
+    }
+}
 bool safeSavePath(const std::string& name) {
     auto split=name.find('/');
     if(split==std::string::npos || (name.substr(0,split)!="internal" && name.substr(0,split)!="external")) return false;

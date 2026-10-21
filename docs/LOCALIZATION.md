@@ -149,3 +149,23 @@ It also opens and exits original Options with the host renderer active.
 touch HUD in headless mode, temporarily enabling visibility then restoring flags.
 The preview never advances campaign state. HL5_TRACE_UI logs unique label call
 sites/geometry and fitted widths; never enable it in normal release environments.
+
+## 1.1.3 — dictionary independent of external extraction
+
+The authoritative full PT corpus is now compiled into src/locales_pt_br.inc.
+tools/prepare_locale.py emits BOTH assets/locales/pt-BR.json and that generated
+include, offline from the existing cache. Never edit the include independently;
+verify_localization.py checks parsed equality of both corpora. Locale::init resets
+language/cache/dictionary state and loads the compiled corpus; live EN/PT/EN uses
+the same draw-time resolution and language-specific guest buffers as before.
+
+This prevents the mixed state reported after Android OTA: compact HUD/grid labels
+were compiled in C++, whereas full native labels and host Settings depended on a
+JSON file that extraction could truncate. Fixing extraction repairs all assets;
+embedding the dictionary additionally makes translation independent of extraction,
+the working directory, and older external copies. Keep English canonical assets,
+control codes, printf tokens and Latin glyph handling unchanged. The native
+Game speed label is now Velocidade, fitting before the value field.
+
+Tests include the complete dictionary with an absent resource directory, both
+directions of live switching, native Options rendering and the custom panel.

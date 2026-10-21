@@ -121,3 +121,27 @@ Added verify_ui.py to Windows/Linux CI: native grid/equipment/tabs, English/PT
 HUD differences constrained to button rectangles, and original Options entry/exit
 without host modal. Required prior runtime/aspect/localization/services checks
 remain. Metadata is 1.1.2 / Android code 4; release packages keep existing names.
+
+## 1.1.3 continuation — 2026-10-21
+
+User reported the 1.1.2 gear too small and asked to integrate the port settings
+into original Options, keeping the gamepad shortcut. User also reported most PT
+text reverting to English, including the host panel. Removed gear draw/hit code;
+added an explicit footer action in both native Options screens, preserving F10/R3.
+The six opcode-guarded hooks record paint and intercept only explicit footer input.
+Do not restore the prior auto-open-on-paint behavior. Native values/counts stay
+untouched; selection survives cached frames and closing the host modal.
+
+Inspected the released 1.1.2 ARM64 APK: full locale JSON and manifest are correct.
+Confirmed SDL 2.30.12 opens existing internal-storage files before APK assets.
+The old extractor could read and truncate the same destination during an update.
+Switched all extraction source reads to AAssetManager and staged size/SHA-checked
+replacement. Existing damaged copies are retried. Full PT dictionary is also
+compiled in, generated with the external JSON; no partial compact-only PT state
+should depend on extraction anymore. Details/source reference in SERVICES.md.
+
+Added same-size upgrade/failure-preservation tests and embedded dictionary tests;
+expanded native UI navigation, close/reopen and touch regressions. See the latest
+verification summaries under ignored build/ for local evidence. These checks do
+not constitute Android/Switch hardware execution. User will validate OTA and UI
+on devices; don't claim those tests happened here. Metadata: 1.1.3 / Android code 5.

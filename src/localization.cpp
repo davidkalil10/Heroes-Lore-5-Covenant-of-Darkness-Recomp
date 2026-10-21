@@ -28,6 +28,7 @@ bool setLanguage(const std::string& value,bool persist) {
     return true;
 }
 void init(const std::string& resources,const std::string& data,const std::string& overrideLanguage) {
+    current="pt-BR";dictionary.clear();cache.clear();glyphs.clear();
     settings=data+"/language.ini";
     try {
         std::ifstream input(settings);std::string line;
@@ -36,7 +37,12 @@ void init(const std::string& resources,const std::string& data,const std::string
     if(!overrideLanguage.empty()) setLanguage(overrideLanguage,false);
     auto path=[&](const char* name) {return resources+(resources.empty() || resources.back()!='/'?"/":"")+name;};
     try {
-        auto j=nlohmann::json::parse(services::readText(path("locales/pt-BR.json"),8*1024*1024));
+        // Packaged with the executable: language changes never depend on a stale
+        // extracted asset or on the process working directory.
+        static const char compiledDictionary[]=
+#include "locales_pt_br.inc"
+        ;
+        auto j=nlohmann::json::parse(compiledDictionary);
         dictionary=j.at("translations").get<decltype(dictionary)>();
     } catch(const std::exception& error) {fprintf(stderr,"[locale] Cannot load PT-BR: %s\n",error.what());}
     try {

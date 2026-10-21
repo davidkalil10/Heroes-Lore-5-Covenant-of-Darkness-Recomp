@@ -316,6 +316,9 @@ jobs:
       contents: write
 
     steps:
+      - name: Checkout release notes
+        uses: actions/checkout@v4
+
       - name: Baixar Artefato Switch
         uses: actions/download-artifact@v4
         with:

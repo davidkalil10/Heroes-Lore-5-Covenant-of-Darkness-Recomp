@@ -329,3 +329,27 @@ replacement or shrink the whole game. Read docs/LOCALIZATION.md for verified dra
 sites and HUD-only 28-pixel fitting. Keep translated attribute labels separate
 from right-aligned values. Use tools/verify_ui.py in addition to existing checks.
 Diagnostics operate on isolated test campaigns, never the player's saves.
+
+## 14. Version 1.1.3 — native settings entry and Android OTA regression
+
+This supersedes the gear instructions in sections 12/13. Read the 1.1.3 additions
+to SERVICES/LOCALIZATION/DISPLAY. Native paint hooks may record/render the explicit
+footer row, but MUST NEVER auto-open the host menu. Open only on new-row confirm/
+touch or F10/R3. src/native_settings.cpp guards six original ARM entry opcodes;
+title Options=0x21a1ec, game System=0x1e7d38/substate1. Native option arrays/counts
+are never extended. Guest state +12=menu,+13=substate; title +14/+15 and in-game
++15/+16 are visible/absolute cursor bytes. Temporary paint-only suppression must
+restore BOTH bytes; retain their difference so scrolling stays intact. Original
+menus may reuse cached frames: do not erase footer selection on a skipped paint.
+Validate current top state at Common+0x244 before keeping a cached footer visible.
+
+Android extraction MUST open APK sources through AAssetManager, never
+SDL_RWFromFile (which prefers extracted internal-storage files). Stage and validate
+size/SHA before replacing; don't truncate the live destination. Locale's full
+dictionary is generated into src/locales_pt_br.inc by prepare_locale.py along with
+the public JSON. verify_localization.py must check their equality. Keep the
+existing live Trans pointer caches and UTF-8 layout guards.
+
+Required checks: CTest plus verify_runtime/aspect/services/localization/ui.py.
+The UI verifier now checks explicit native title/game access and touch. Test paths
+must remain disposable. Version bump uses bump_version.py; code 5 for 1.1.3.

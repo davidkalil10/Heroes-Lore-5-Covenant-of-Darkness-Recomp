@@ -1,4 +1,5 @@
 #include "hle.h"
+#include "../native_settings.h"
 #include "../audio/audio.h"
 #include "../core/trans.h"
 #include "../localization.h"
@@ -956,7 +957,9 @@ void Game::frame() {
     auto wholeMs=(u64)remainderMs;
     remainderMs-=wholeMs;
     g_simTimeMs+=wholeMs;
+    native_settings::beginFrame();
     cpu.call(sym("Java_co_kr_eamobile_CletEntry_nativeLoop"), {g_env, g_thiz});
+    native_settings::endFrame(screen);
     if(titlePainted && screen.w>0)drawTitleText(screen);
 }
 void Game::key(int type, int k) { cpu.call(sym("Java_co_kr_eamobile_CletEntry_nativeKeyHandleEvent"), {g_env, g_thiz, (u32)type, (u32)k, 0}); }

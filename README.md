@@ -33,12 +33,12 @@ Os pacotes prontos para jogar ficam em **[Releases](https://github.com/davidkali
 | Android | APK universal ou ARM64 |
 | Nintendo Switch | Homebrew `.nro` com recursos embutidos |
 
-## ✨ Recursos e novidades da v1.1.2
+## ✨ Recursos e novidades da v1.1.3
 
 - **Interface PT-BR revisada:** rótulos próprios para botões, abas e colunas de atributos, mantendo os nomes completos nos títulos.
 - **Comprar / Salvar no HUD:** a fonte respeita a largura dos botões em Native e Wide, sem invadir os vizinhos.
-- **Engrenagem discreta:** tamanho limitado em tela cheia, posicionada acima do botão original de menu/voltar.
-- **Configurações independentes:** a opção original do título abre somente as opções do jogo; o painel do port abre por engrenagem, F10 ou R3 e fecha normalmente.
+- **Configurações integradas:** nova linha **Opções do port** dentro das configurações originais do jogo; a engrenagem flutuante foi removida.
+- **PT-BR após atualizar:** extração Android lê diretamente do APK e valida os arquivos antes de substituir as cópias antigas. O dicionário completo também fica incorporado ao executável.
 
 ### Recursos disponíveis
 
@@ -49,14 +49,14 @@ Os pacotes prontos para jogar ficam em **[Releases](https://github.com/davidkali
 - 🎵 **Áudio e execução otimizados:** mixer Ogg/MP3, regiões ARM recompiladas, índice de arquivos e relógio corrigido.
 - ☁️ **Google Drive entre plataformas:** envie o progresso salvo em um aparelho e restaure em outro. Restaurar agora **volta ao título sem fechar o app**.
 - 🔄 **Atualizações pelo GitHub:** consulta ao abrir ou pelo menu, download validado e instalação com confirmação.
-- ⚙️ **Configurações pela engrenagem:** botão no canto superior direito, F10 ou R3. Proporção de tela fica dentro do menu.
+- ⚙️ **Configurações:** opções originais → **Opções do port**, ou atalho F10/R3. Proporção de tela, idioma, atualizações e nuvem ficam nesse painel.
 - 📱 **Painel maior no Android** e carregamento de fonte corrigido no Switch, com fonte de emergência para falhas de carregamento/renderização.
 - 🏷️ **Versão instalada no título** e no painel de configurações; metadados atualizados em todas as plataformas.
 
 O autor confirmou desempenho, áudio, modos de tela, backup/restauração entre
 aparelhos, troca de idioma e restauração sem fechar o jogo. A atualização
 automática no Android também foi confirmada. A atualização do Switch será
-conferida nesta release. As correções visuais da v1.1.2 têm capturas e testes
+conferida nesta release. As correções visuais e de navegação da v1.1.3 têm capturas e testes
 automatizados no PC/CI; a conferência final nos dispositivos continua necessária. A tradução foi preparada com assistência automática e revisão de
 termos e formatação; sugestões de texto/contexto são bem-vindas durante a campanha.
 
@@ -75,9 +75,13 @@ também permitem testar mudanças publicadas na `main` antes de uma release.
 
 ## ⚙️ Configurações
 
-Abra pela **engrenagem ⚙️ no canto superior direito**, pela tecla **F10**,
-ou clicando o analógico direito (**R3**). A opção original de configurações na tela de título abre
-somente as opções do próprio jogo, independentemente do painel do port.
+Abra as configurações originais e escolha **Opções do port**, no final do painel.
+Durante o jogo: **menu → Sistema → Configurações → Opções do port**.
+Na tela de título: **Configurações → Opções do port**.
+Também é possível abrir diretamente pela tecla **F10** ou pelo analógico direito (**R3**).
+A nova linha aceita toque/clique; no teclado ou controle, subir a partir da primeira
+opção ou descer após a última seleciona a nova entrada. Voltar fecha o painel
+personalizado e mantém a tela de opções original disponível.
 Use setas/D-pad/analógico para navegar, confirmar para escolher e voltar para fechar.
 Mouse e toque também funcionam. O jogo fica pausado enquanto o painel está aberto.
 
@@ -90,7 +94,7 @@ nos dois idiomas. Uma instalação sem preferência salva começa em PT-BR.
 
 Os recursos em inglês continuam como base canônica. O dicionário PT-BR é aplicado
 ao desenhar o texto, incluindo números e mensagens formatadas; ele acompanha todos
-os pacotes. A fonte original permanece nos caracteres ASCII e os acentos usam uma
+os executáveis e também os recursos dos pacotes, sem depender da extração para funcionar. A fonte original permanece nos caracteres ASCII e os acentos usam uma
 fonte complementar. Detalhes em [docs/LOCALIZATION.md](docs/LOCALIZATION.md).
 
 ## 🔄 Atualizações pelo GitHub

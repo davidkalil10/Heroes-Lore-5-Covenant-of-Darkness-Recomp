@@ -27,23 +27,37 @@
 #include <SDL_system.h>
 #include <unistd.h>
 #include <android/log.h>
+#include <android/asset_manager_jni.h>
 #define LOGI(...) do { __android_log_print(ANDROID_LOG_INFO, "HL5", __VA_ARGS__); fprintf(stderr, __VA_ARGS__); } while(0)
 #define LOGE(...) do { __android_log_print(ANDROID_LOG_ERROR, "HL5", __VA_ARGS__); fprintf(stderr, __VA_ARGS__); } while(0)
 
+// SDL_RWFromFile intentionally prefers internal storage over APK assets. Using
+// it for an OTA refresh can open dst as src, then truncate that same file.
+// Read only AAssetManager; validate a staged copy before replacing extracted data.
+struct ApkAssets {
+    JNIEnv* env=static_cast<JNIEnv*>(SDL_AndroidGetJNIEnv());
+    jobject activity=nullptr,object=nullptr;AAssetManager* manager=nullptr;
+    ApkAssets(){
+        if(!env)return;
+        activity=static_cast<jobject>(SDL_AndroidGetActivity());if(!activity)return;
+        auto cls=env->GetObjectClass(activity);
+        auto method=env->GetMethodID(cls,"getAssets","()Landroid/content/res/AssetManager;");
+        if(method)object=env->CallObjectMethod(activity,method);
+        if(env->ExceptionCheck()){env->ExceptionClear();object=nullptr;}
+        if(object)manager=AAssetManager_fromJava(env,object);
+        env->DeleteLocalRef(cls);
+    }
+    ~ApkAssets(){if(env){if(object)env->DeleteLocalRef(object);if(activity)env->DeleteLocalRef(activity);}}
+};
 static void ensureAndroidAssets(const std::string& storageDir) {
-    LOGI("[android] Reading assets_list.txt...\n");
-    SDL_RWops* mf = SDL_RWFromFile("assets_list.txt", "rb");
-    if (!mf) {
-        LOGE("[android] assets_list.txt not found in APK assets\n");
-        return;
-    }
-    Sint64 mfSize = SDL_RWsize(mf);
-    std::string content;
-    if (mfSize > 0) {
-        content.resize((size_t)mfSize);
-        SDL_RWread(mf, content.data(), 1, (size_t)mfSize);
-    }
-    SDL_RWclose(mf);
+    ApkAssets apk;
+    if(!apk.manager){LOGE("[android] Cannot access APK assets\n");return;}
+    AAsset* mf=AAssetManager_open(apk.manager,"assets_list.txt",AASSET_MODE_STREAMING);
+    if(!mf){LOGE("[android] APK asset manifest missing\n");return;}
+    std::string content;char chunk[8192];int n=0;
+    while((n=AAsset_read(mf,chunk,sizeof(chunk)))>0)content.append(chunk,n);
+    AAsset_close(mf);
+    if(n<0 || content.empty()){LOGE("[android] APK asset manifest unreadable\n");return;}
 
     auto manifestPath=storageDir+"/assets_manifest.sha256";
     auto fingerprint=services::sha256(std::vector<uint8_t>(content.begin(),content.end()));
@@ -81,26 +95,11 @@ static void ensureAndroidAssets(const std::string& storageDir) {
             }
         }
 
-        std::filesystem::create_directories(std::filesystem::path(dst).parent_path(), ec);
-        SDL_RWops* src = SDL_RWFromFile(relPath.c_str(), "rb");
-        if (!src) {
-            LOGE("[android] Failed to open APK asset: %s\n", relPath.c_str());
-            extractionFailed=true;
-            continue;
-        }
-        FILE* out = fopen(dst.c_str(), "wb");
-        if (!out) {extractionFailed=true;SDL_RWclose(src);continue;}
-
-        std::vector<uint8_t> buf(64 * 1024);
-        size_t extractedBytes=0;
-        while (true) {
-            size_t n = SDL_RWread(src, buf.data(), 1, buf.size());
-            if (n == 0) break;
-            if(fwrite(buf.data(),1,n,out)!=n) extractionFailed=true;
-            extractedBytes+=n;
-        }
-        if(fclose(out)!=0 || extractedBytes!=expectedSize) extractionFailed=true;
-        SDL_RWclose(src);
+        AAsset* src=AAssetManager_open(apk.manager,relPath.c_str(),AASSET_MODE_STREAMING);
+        if(!src){LOGE("[android] APK asset missing: %s\n",relPath.c_str());extractionFailed=true;continue;}
+        bool ok=services::extractAsset(dst,expectedSize,digest,[&](char* buffer,int size){return AAsset_read(src,buffer,size);});
+        AAsset_close(src);
+        if(!ok){extractionFailed=true;continue;}
         extracted++;
     }
     if(!extractionFailed) {try {services::writeText(manifestPath,fingerprint);} catch(...) {}}
@@ -312,6 +311,7 @@ int main(int argc, char** argv) {
     std::string dumpUi,languageOverride;
     std::map<int,std::string> scriptLanguages;
     std::map<int,int> scriptMenus;
+    std::map<int,std::pair<int,int>> scriptTouches;
     AspectMode requestedMode=AspectMode::Native;
     bool hasModeOverride=false;
     std::map<int,AspectMode> scriptModes;
@@ -341,6 +341,10 @@ int main(int argc, char** argv) {
         }
         else if(a=="--game-menu-at" && i+1<argc) {
             int frame=0,menu=0;if(sscanf(argv[++i],"%d:%d",&frame,&menu)!=2 || frame<0 || menu< -1 || menu>20)return 2;scriptMenus[frame]=menu;
+        }
+        else if(a=="--touch-at" && i+1<argc) {
+            int frame=0,x=0,y=0;if(sscanf(argv[++i],"%d:%d:%d",&frame,&x,&y)!=3 || frame<0)return 2;
+            scriptTouches[frame]={x,y};
         }
         else if(a=="--language" && i+1<argc) languageOverride=argv[++i];
         else if(a=="--language-at" && i+1<argc) {
@@ -648,16 +652,22 @@ int main(int argc, char** argv) {
         if (scriptKeys.count(f)) {
             int k = scriptKeys[f];
             fprintf(stderr, "[script] Injecting key press %d at frame %d\n", k, f);
-            game.key(EV_KEY_PRESS, k);
+            if(serviceui::active()) {
+                SDL_Event e{};e.type=SDL_KEYDOWN;
+                e.key.keysym.sym=k==WK_CLEAR?SDLK_ESCAPE:k==WK_UP?SDLK_UP:k==WK_DOWN?SDLK_DOWN:k==WK_SELECT?SDLK_RETURN:SDLK_UNKNOWN;
+                serviceui::event(e,false);
+            } else game.key(EV_KEY_PRESS, k);
         }
         if (scriptKeys.count(f - 2)) {
             int k = scriptKeys[f - 2];
-            game.key(EV_KEY_RELEASE, k);
+            if(!serviceui::active())game.key(EV_KEY_RELEASE, k);
         }
         if(scriptMenus.count(f) && scriptMenus[f]>=0) {
             if(gm::r32(0x1428bc)!=0xe59f3020)return 1;
             game.cpu.call(0x1428bc,{0,3,u32(scriptMenus[f])});
         }
+        if(scriptTouches.count(f))game.touch(EV_PTR_PRESS,scriptTouches[f].first,scriptTouches[f].second,0);
+        if(scriptTouches.count(f-2))game.touch(EV_PTR_RELEASE,scriptTouches[f-2].first,scriptTouches[f-2].second,0);
         if(scriptLanguages.count(f)) Locale::setLanguage(scriptLanguages[f],false);
         if(f==titleAt && !game.returnToTitle()) return 1;
         auto serviceStatus=(!headless)?services::status():services::Status{};

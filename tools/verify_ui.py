@@ -63,8 +63,18 @@ def main():
         '--press-at','220:-5','--press-at','400:-16','--dump-every','100','--window','960x720'],interactive=True)
     if '[settings] opened' in log:raise RuntimeError('Original options opened host Settings')
     if 'text=SIM' not in log and 'text=NÃO' not in log:raise RuntimeError('Original options screen was not exercised')
+    # The explicit row is available in both original Options lists. Ordinary
+    # option editing/Back must remain native; only the new action opens the modal.
+    base=['--frames','520','--press-at','180:-2','--press-at','200:-4','--press-at','220:-5','--window','960x720']
+    opened=run('native-title-port',base+['--press-at','270:-1','--press-at','300:-5','--press-at','360:-16','--press-at','420:-5','--dump-every','20'],interactive=True)
+    if opened.count('[settings] opened')!=2:raise RuntimeError('Native title row must open, close and reopen Settings')
+    if 'title:pt-BR:selected' not in opened:raise RuntimeError('Title row was not selected')
+    game=run('native-game-port',['--game-menu-at','1300:9','--press-at','1310:-2','--press-at','1320:-5','--press-at','1350:-1','--press-at','1380:-5','--press-at','1420:-16','--dump-every','20'])
+    if '[settings] opened' not in game or 'game:pt-BR:selected' not in game:raise RuntimeError('In-game native options row failed')
+    touched=run('native-title-touch',base+['--touch-at','270:80:287','--press-at','360:-16'],interactive=True)
+    if touched.count('[settings] opened')!=1:raise RuntimeError('Native title touch row failed')
     (reports/'summary.json').write_text(json.dumps({'compact_grid':True,'stat_columns':True,'skill_tabs':True,
-        'hud_no_spill_native_and_wide':True,'original_options_without_host_modal':True},indent=2)+'\n')
-    print('PASS: compact native menus/stats/tabs; HUD text stays inside buttons; original Options keeps host panel closed.')
+        'hud_no_spill_native_and_wide':True,'original_options_without_host_modal':True,'explicit_title_game_row':True,'native_touch_row':True,'close_reopen':True},indent=2)+'\n')
+    print('PASS: compact native menus/stats/tabs; HUD text stays inside buttons; original Options stays independent; explicit title/game/touch row and close/reopen pass.')
 
 if __name__=='__main__':main()

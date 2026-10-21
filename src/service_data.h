@@ -1,11 +1,12 @@
 #pragma once
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <string>
 #include <vector>
 
 namespace services {
-constexpr const char* Version = "1.1.2";
+constexpr const char* Version = "1.1.3";
 constexpr const char* Repository = "davidkalil10/Heroes-Lore-5-Covenant-of-Darkness-Recomp";
 struct Release {
     std::string tag, name, notes, asset, url, digest;
@@ -25,5 +26,8 @@ std::string restoreSaves(const std::string& root, const SaveFiles& files);
 std::string platformName();
 std::string readText(const std::string& path, size_t limit = 32 * 1024 * 1024);
 void writeText(const std::string& path, const std::string& text);
+// The reader must open the immutable package, never the extraction destination.
+bool extractAsset(const std::string& path,size_t expectedSize,const std::string& digest,
+                  const std::function<int(char*,int)>& reader);
 std::string urlEncode(const std::string& text);
 }

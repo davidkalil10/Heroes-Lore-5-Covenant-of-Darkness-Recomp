@@ -1,4 +1,4 @@
-# Platform services — version 1.1.2
+# Platform services — version 1.1.3
 
 ## Architecture and reference ports
 
@@ -18,9 +18,11 @@ the other games' filenames or copy their Java RMS/VM reload code into this ARM p
 - `src/service_data.*`: JSON release parsing, numeric stable version comparison,
   URL constraints, SHA256, strict base64, save archive validation and staged restore.
 - `src/service_ui.*`: responsive SDL Settings/Cloud/Update panels with Inter font
-  rasterized via stb_truetype. F10, R3 and a touch/mouse button expose it globally.
-  The panel opens only from gear/F10/R3. Native StateMainMenu::DrawOption at
-  0x21a1ec is no longer hooked: the original options remain entirely independent.
+  rasterized via stb_truetype. F10/R3 expose it globally; an explicit native Options
+  footer row exposes it through mouse/touch and the original menu navigation.
+  The panel opens only from the explicit Options row or F10/R3. Native StateMainMenu::DrawOption at
+  0x21a1ec only records the native Options screen; it never opens the modal on paint.
+  The original option editing remains independent of the explicit port action.
 - `src/input_mapping.*`: keyboard and labeled Nintendo/controller policy.
 
 The host freezes guest frames while Settings is open. Restore now stages a
@@ -181,3 +183,32 @@ exit on 1.1.1. Switch OTA remains pending the user's test with 1.1.2.
 Version metadata: 1.1.2 / Android code 4. CTest checks fullscreen geometry and
 repeated panel open/close; tools/verify_ui.py exercises original title Options
 and verifies it never opens the host panel.
+
+## 1.1.3 — explicit native entry and safe Android resource upgrades
+
+This supersedes the 1.1.2 gear instructions. There is no floating gear or gear hit
+target. Original Options contains a fixed footer action, Port settings / Opções do
+port, on both title and in-game screens. Painting never opens the host modal.
+Only confirming/tapping the new row (or F10/R3) opens it. Back closes the modal
+without closing the original menu. Native option values/counts remain intact.
+
+The Android regression was an extraction source/destination alias: SDL 2.30.12
+SDL_RWFromFile first opens relative names under internal storage, before trying
+APK assets. A changed asset that already existed could therefore be opened as
+the source and truncated when the destination was opened with wb. The published
+1.1.2 ARM64 APK was inspected: its complete PT dictionary and SHA manifest were
+present and valid. The fault was in refreshing the extracted copy.
+
+ensureAndroidAssets now uses AAssetManager explicitly for the manifest and all
+source streams. services::extractAsset stages, checks size/SHA-256, then replaces
+with rollback; failed/truncated/wrong-digest reads preserve the previous file.
+Only a completely successful pass updates the manifest fingerprint. Existing
+empty/corrupt resources are repaired on next boot; saves/tokens are separate.
+Reference: SDL release-2.30.12 src/file/SDL_rwops.c, SDL_RWFromFile Android branch:
+https://github.com/libsdl-org/SDL/blob/release-2.30.12/src/file/SDL_rwops.c#L511-L560
+
+CTest covers existing-file same-size replacement, empty reads, stale bytes with a
+new digest, preservation on failure, R3/F10 and embedded PT without external assets.
+verify_ui.py covers explicit title/game entry, close/reopen and original options
+remaining independent. Keep actual device upgrade verification separate from CI.
+Version 1.1.3, Android code 5, same package names/signing/save paths.
