@@ -2,6 +2,7 @@
 #include "trans.h"
 #include "../native_settings.h"
 extern std::string g_overrideDir;
+extern bool accelerateMenuBlur(Cpu&);
 extern void refreshViewportMap(Cpu& cpu);
 extern bool handleLatinFontHook(Cpu&,u32);
 extern void beginBoundedText(Cpu&);
@@ -40,7 +41,7 @@ static inline bool isHook(u32 pc) {
     if (g_hookMap.empty()) {
         g_hookMap.assign(0x400000, 0);
         static const u32 pcs[] = {0x1417a4, 0x11b348, 0x11feac, 0x11febc, 0x4e03c, 0x4d9f0, 0xc3bbc, 0xc42a0,
-                                  0x11a1ec,0xe7d38,0x11eb3c,0x100764,0x1186e8,0xface8,0x41334,0x41470,0x42838,0x11d4b0,0x11db18,0x41a94,0x41c64,0x41510,0x40ee8,0x40f6c,0x4178c,0x4170c,0x3cf00,0x41320,0x4126c,0x41b00, 0x6afd0, 0xb129c, 0x14c7e4, 0x418dc, 0x41878, 0x41818, 0x41d78, 0x41940, 0x144db8, 0x145754, 0x59664, 0x59d68, 0x4e7e4, 0x5371c, 0x538c8};
+                                  0x11a1ec,0xe7d38,0x11eb3c,0x100764,0x1186e8,0xface8,0x41334,0x41470,0x42838,0x11d4b0,0x11db18,0x41a94,0x41c64,0x41510,0x40ee8,0x40f6c,0x4178c,0x4170c,0x3cf00,0x41320,0x4126c,0x41b00, 0x6afd0, 0xb129c, 0x14c7e4, 0x418dc, 0x41878, 0x41818, 0x41d78, 0x41940, 0x144db8, 0x145754, 0x59664, 0x59d68, 0x4e7e4, 0x5371c, 0x538c8, 0x51a68};
         for (u32 p : pcs) g_hookMap[p >> 2] = 1;
     }
     u32 o = pc - 0x00100000;
@@ -145,8 +146,10 @@ void Cpu::step() {
         return;
     }
     u32 ins = gm::r32(pc);
-    if (g_prof) g_profHist[(pc - 0x00100000) >> 2]++;
+    static const bool profileRemaining=getenv("HL5_PROF_REMAINING")!=nullptr;
+    if (g_prof || profileRemaining) g_profHist[(pc - 0x00100000) >> 2]++;
     if (isHook(pc)) switch (pc) {
+        case 0x151a68: if(accelerateMenuBlur(*this)) return; break;
         case 0x21a1ec:case 0x1e7d38:case 0x21eb3c:case 0x200764:case 0x2186e8:case 0x1face8:
             if(native_settings::hook(*this,pc))return;
             break;
@@ -340,12 +343,12 @@ void Cpu::step() {
                 if (outSizePtr >= 0x1000 && outSizePtr < gm::MEM_SIZE) {
                     gm::w32(outSizePtr, (u32)n);
                 }
-                fprintf(stderr, "[OVERRIDE] Loaded '%s' from host disk (%ld bytes, guestPtr=0x%08x)\n", p.c_str(), sz, guestBuf);
+                if(getenv("HL5_TRACE_IO")) fprintf(stderr, "[OVERRIDE] Loaded '%s' from host disk (%ld bytes, guestPtr=0x%08x)\n", p.c_str(), sz, guestBuf);
                 r[0] = guestBuf;
                 r[15] = r[14]; // return to caller
                 return;
             } else {
-                fprintf(stderr, "[LoadRes] '%s' (fallback to VFS)\n", p.c_str());
+                if(getenv("HL5_TRACE_IO")) fprintf(stderr, "[LoadRes] '%s' (fallback to VFS)\n", p.c_str());
             }
             break;
         }
@@ -681,7 +684,12 @@ void Cpu::step() {
 #include "hot_blocks.inc"
 
 void Cpu::run() {
-    static const std::vector<u8> entryMap=[] { std::vector<u8> map(0x200000/4,0); map[(0x150208-gm::LOAD_BASE)>>2]=1; map[(0x156aa8-gm::LOAD_BASE)>>2]=1; map[(0x133f04-gm::LOAD_BASE)>>2]=1; map[(0x154dc8-gm::LOAD_BASE)>>2]=1; map[(0x13bea4-gm::LOAD_BASE)>>2]=1; map[(0x14eba0-gm::LOAD_BASE)>>2]=1; map[(0x151ae8-gm::LOAD_BASE)>>2]=1; return map; }();
+    static const std::vector<u8> entryMap=[] {
+        std::vector<u8> map(0x200000/4,0);
+        static constexpr u32 entries[]={0x150208,0x156aa8,0x133f04,0x154dc8,0x13bea4,0x14eba0,0x151ae8,0x153690,0x159218,0x1576ec,0x1554d0,0x15a044,0x1a7c6c,0x1b09a0};
+        for(u32 pc:entries) map[(pc-gm::LOAD_BASE)>>2]=1;
+        return map;
+    }();
     while (r[15] != RET_MAGIC) {
         u32 offset=r[15]-gm::LOAD_BASE;
         if (offset>=0x200000 || !entryMap[offset>>2] || !tryHotBlock()) step();

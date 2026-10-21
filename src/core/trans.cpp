@@ -179,7 +179,7 @@ u32 translatePtr(u32 strPtr, int maxLen, Locale::UiText context) {
     u32 guestBuf = gm::malloc_(bufSz + 4);
     memcpy(gm::ptr(guestBuf, bufSz), trans.c_str(), bufSz);
     s_guestCache[key] = guestBuf;
-    fprintf(stderr, "[TRANS] '%s' -> '%s' (0x%08x -> 0x%08x)\n", orig.c_str(), trans.c_str(), strPtr, guestBuf);
+    if(getenv("HL5_TRACE_TRANSLATIONS")) fprintf(stderr, "[TRANS] '%s' -> '%s' (0x%08x -> 0x%08x)\n", orig.c_str(), trans.c_str(), strPtr, guestBuf);
 
     return guestBuf;
 }

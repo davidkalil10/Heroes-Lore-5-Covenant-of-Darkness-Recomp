@@ -33,11 +33,16 @@ Os pacotes prontos para jogar ficam em **[Releases](https://github.com/davidkali
 | Android | APK universal ou ARM64 |
 | Nintendo Switch | Homebrew `.nro` com recursos embutidos |
 
-## ✨ Recursos e novidades da v1.1.5
+## ✨ Recursos e novidades da v1.1.6
 
-Esta release mantém as correções da v1.1.4 e aumenta o versionamento para testar
-a atualização entre aparelhos: detecção ao iniciar, progresso do download,
-instalação e relançamento. No Android, o versionCode passa de 6 para 7.
+Esta versão traz otimizações de CPU voltadas à lentidão relatada no Switch:
+desfoque do menu, desenho de sprites, transparências e recorte do mapa. Também
+reduz gravações de diagnóstico durante a partida. O Android usa versionCode 8.
+
+- **Menu mais rápido:** o desfoque RGB565 é calculado nativamente, mantendo a imagem original.
+- **Renderização:** sete novas regiões ARM compiladas para sprites, efeitos e mapa; agora são 14 no total.
+- **Switch:** compilação com otimização O3 e amostras de desempenho no boot.log a cada dez segundos.
+- **Verificação:** 28 comparações de estado ARM, imagens idênticas e testes específicos do desfoque. A melhora efetiva no Switch precisa de teste no aparelho.
 
 - **Atualização ao iniciar:** aviso visível durante a busca, nova tentativa se a conexão falhar e abertura automática do painel quando houver uma versão nova.
 - **Progresso do download:** barra, percentual e MB recebidos, incluindo no Switch.
@@ -62,8 +67,8 @@ instalação e relançamento. No Android, o versionCode passa de 6 para 7.
 
 O autor confirmou desempenho, áudio, modos de tela, backup/restauração entre
 aparelhos, troca de idioma e restauração sem fechar o jogo. A atualização
-automática no Android também foi confirmada. A atualização do Switch será
-conferida nesta release. As correções visuais e de navegação da v1.1.3 têm capturas e testes
+automática foi confirmada no Android e, após as correções do atualizador, no
+Switch. O desempenho desta versão no Switch ainda será avaliado no aparelho. As correções visuais e de navegação da v1.1.3 têm capturas e testes
 automatizados no PC/CI; a conferência final nos dispositivos continua necessária. A tradução foi preparada com assistência automática e revisão de
 termos e formatação; sugestões de texto/contexto são bem-vindas durante a campanha.
 

@@ -98,6 +98,7 @@ jobs:
           python tools/verify_services.py
           python tools/verify_localization.py --exe build/hl5.exe
           python tools/verify_ui.py --exe build/hl5.exe
+          python tools/verify_menu_blur.py --exe build/hl5.exe
           python tools/bump_version.py --check
 
       - name: Upload Windows Runtime Diagnostics
@@ -111,6 +112,7 @@ jobs:
             build/services-verification/
             build/localization-verification/
             build/ui-verification/
+            build/menu-blur-verification/
 
       - name: Package Windows Portable Release
         shell: msys2 {0}
@@ -187,6 +189,7 @@ jobs:
           python3 tools/verify_services.py
           python3 tools/verify_localization.py --exe build/hl5
           python3 tools/verify_ui.py --exe build/hl5
+          python3 tools/verify_menu_blur.py --exe build/hl5
           python3 tools/bump_version.py --check
 
       - name: Upload Linux Runtime Diagnostics
@@ -200,6 +203,7 @@ jobs:
             build/services-verification/
             build/localization-verification/
             build/ui-verification/
+            build/menu-blur-verification/
 
       - name: Prepare AppDir
         run: |

@@ -32,7 +32,7 @@ def main():
             if label == 'optimized':
                 run_env.update(HL5_VERIFY_AOT='1', HL5_VERIFY_VFS='1')
             else:
-                run_env.update(HL5_NO_AOT='1', HL5_NO_VFS_CACHE='1')
+                run_env.update(HL5_NO_AOT='1', HL5_NO_VFS_CACHE='1', HL5_NO_MENU_BLUR='1')
             dump = temporary / label / 'frames'
             command = [str(exe), '--apk', str(root / 'reference/extracted_apk'),
                        '--data', str(temporary / label / 'saves'), '--headless', '--language', 'en',
@@ -48,8 +48,8 @@ def main():
             if not audio or int(audio[2]) == 0:
                 raise RuntimeError(f'Audio callback produced no signal: {log}')
             passes = len(re.findall(r'\[aot\] differential PASS', text))
-            if label == 'optimized' and passes != 14:
-                raise RuntimeError(f'Expected 14 ARM differential checks, got {passes}: {log}')
+            if label == 'optimized' and passes != 28:
+                raise RuntimeError(f'Expected 28 ARM differential checks, got {passes}: {log}')
             if label == 'optimized' and '[vfs-cache] differential PASS' not in text:
                 raise RuntimeError(f'VFS differential checks did not run: {log}')
             times = root / 'frame_times.csv'
@@ -71,7 +71,7 @@ def main():
                 raise RuntimeError(f'Render mismatch: {original.name}')
         summary['identical_images'] = len(expected)
     (reports / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n', encoding='utf-8')
-    print('PASS: 14 ARM state checks; VFS oracle; 11 identical images; audio signal in both runs.')
+    print('PASS: 28 ARM state checks; VFS oracle; 11 identical images; audio signal in both runs.')
     print(f'Reports: {reports}')
 
 

@@ -12,7 +12,7 @@ the authoritative source. `codex_lab/` remains a local ignored experiment and
 backup, not a CI/release source. Read `docs/HANDOFF.md` and `docs/RUNTIME.md` before
 changing the CPU, clocks, audio, build rules, or VFS hooks.
 
-- CPU: seven opcode-guarded statically compiled ARM regions in
+- CPU: fourteen opcode-guarded statically compiled ARM regions in
   `src/core/hot_blocks.inc`. Regenerate with `python tools/generate_hot_blocks.py`;
   do not hand-edit the generated decoder or alter its ARM semantics independently.
 - Audio: `src/audio/audio.cpp` provides SDL2 mixing and Ogg/MP3 decoding. Do not
@@ -27,7 +27,7 @@ changing the CPU, clocks, audio, build rules, or VFS hooks.
   `HL5_PROF`, and `HL5_BENCH` are documented in `docs/RUNTIME.md`.
 - Required runtime validation after relevant changes:
   `python tools/verify_runtime.py --exe build/hl5.exe` (Linux: `build/hl5`).
-  It uses disposable saves and dummy audio, compares 11 full frames, checks 14
+  It uses disposable saves and dummy audio, compares 11 full frames, checks 28
   ARM states and VFS results, and confirms nonzero audio output. CI runs it on
   Windows/Linux. Do not claim Android/Switch gameplay validation from a PC test.
 - Local preexisting CPU blitter/input changes were included in the accepted
@@ -369,3 +369,16 @@ Preserve TLS verification/CA; earlier ports' TLS settings are not an example to 
 Required checks remain CTest, runtime/aspect/services/localization/ui verifiers.
 The services verifier now also requires build/hl5_download_tests and uses a local
 HTTP server to validate real redirect/stream progress with no external accounts.
+
+
+## 16. Version 1.1.6 — Switch performance
+
+Read the 1.1.6 sections of docs/RUNTIME.md and docs/HANDOFF.md before runtime
+edits. Fourteen AOT regions now require 28 state checks. Menu blur is a separate,
+guarded native hook; preserve its final interpreted pixel and full-state oracle.
+Required checks also include tools/verify_menu_blur.py in both host CI builds.
+HL5_PROF_REMAINING profiles interpreted instructions while keeping AOT enabled;
+HL5_NO_MENU_BLUR, HL5_VERIFY_MENU_BLUR, HL5_TRACE_IO and
+HL5_TRACE_TRANSLATIONS are diagnostic-only toggles. Switch O3, reduced logs and
+ten-second timing samples help investigate gameplay; PC timings do not prove
+device FPS. No clock changes, save migration or automatic quality reduction.

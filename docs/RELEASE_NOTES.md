@@ -1,18 +1,25 @@
-## Heroes Lore 5 — v1.1.5
+## Heroes Lore 5 — v1.1.6
 
-Release preparada para testar o atualizador corrigido na **v1.1.4**. Mantém o mesmo comportamento do jogo e do atualizador; o versionamento foi aumentado para que os aparelhos reconheçam uma versão nova.
+Otimizações para investigar e reduzir a lentidão geral relatada no Nintendo Switch, inclusive as pausas ao abrir o menu.
 
-- Versão do aplicativo: **1.1.5**.
-- Android: **versionCode 7**, mantendo a assinatura e o identificador do aplicativo.
-- Nomes dos pacotes, caminhos dos saves e login do Google preservados.
+- Desfoque do menu RGB565 executado nativamente, preservando os pixels e o estado original ao final de cada linha.
+- Sete novas regiões ARM compiladas: sprites espelhados, transparências, paletas, recorte e efeitos do mapa. Agora são 14 regiões.
+- Menos gravações recorrentes no cartão SD durante o jogo; erros e informações de inicialização continuam disponíveis.
+- Build Switch com O3, seguindo a otimização já usada no PC/Android.
+- Log de desempenho no Switch a cada dez segundos, separando entrada, execução do jogo e apresentação/espera.
+- Versão **1.1.6**, Android **versionCode 8**; assinatura, saves e login preservados.
 
-### Teste a partir da v1.1.4
+### Validação e limites
 
-1. Abra o jogo com **Verificar atualizações ao abrir** ativado e confirme que o aviso aparece. A busca manual também está disponível em **Opções do port → Verificar atualizações**.
-2. Baixe a atualização e confira a barra, o percentual e os MB recebidos.
-3. Instale, reinicie e confirme **1.1.5** no título ou nas configurações, além da continuidade dos saves.
+As verificações no PC comparam 28 estados ARM, quadros completos, áudio, localização, proporções de tela, serviços e menus. O desfoque também é comparado com o original em Native/Wide/Auto e nos dois idiomas, incluindo memória completa e registradores.
 
-**Switch:** quem já instalou a v1.1.4 pode testar o atualizador corrigido. Versões antigas com o erro “Function not implemented” ainda precisam de uma substituição manual do NRO para receber a correção. Preserve a pasta de dados/saves.
+Nos testes locais no PC, a abertura do menu ficou cerca de oito a nove vezes mais rápida. No roteiro do mapa em widescreen, a mediana do tempo médio de processamento caiu de 2,35 para 2,05 ms (cerca de 13%); no modo nativo não houve ganho consistente. Esses números não representam FPS medidos no Switch nem garantem a mesma melhora no aparelho.
+
+### Teste no Switch
+
+1. Atualize pelo próprio jogo e confirme **1.1.6** no título.
+2. Compare abertura do menu, movimentação e ataques no mesmo mapa e modo de tela.
+3. Se ainda houver lentidão, o arquivo `sdmc:/switch/heroes_lore_5/boot.log` contém linhas `[switch-perf]` para orientar a próxima investigação. `present_wait_ms` inclui espera de sincronização/limitação de quadros; `fps` mede o laço do aplicativo.
 
 ### Pacotes
 
@@ -23,6 +30,4 @@ Release preparada para testar o atualizador corrigido na **v1.1.4**. Mantém o m
 | Android | `heroes_lore_5_android_arm64.apk` ou `heroes_lore_5_android_universal.apk` |
 | Nintendo Switch | `heroes_lore_5.nro` |
 
-Para instalação Windows nova, use o ZIP completo. O EXE avulso requer os recursos e dependências já instalados.
-
-As verificações automatizadas das builds continuam ativas; a instalação e o relançamento nos aparelhos são o objetivo deste teste.
+Para instalação Windows nova, use o ZIP completo. O EXE avulso requer os recursos e dependências já instalados. Versões antigas do Switch com o instalador anterior à 1.1.4 precisam de uma substituição manual do NRO para receber aquele conserto; preserve a pasta de dados.

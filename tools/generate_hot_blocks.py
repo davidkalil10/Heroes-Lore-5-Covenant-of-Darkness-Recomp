@@ -15,7 +15,10 @@ asm=(root/'reference/libHeroesLore5.asm').read_text(encoding='utf-8')
 ops={int(a,16)+0x100000:int(b,16) for a,b in re.findall(r'^\s*([0-9a-f]{5,8}): ([0-9a-f]{8})\s',asm,re.M)}
 regions=[(0x150208,0x150298,0x150208),(0x156890,0x156af8,0x156aa8),(0x133f04,0x134084,0x133f04),
          (0x154bac,0x154e18,0x154dc8),(0x13be70,0x13bec8,0x13bea4),
-         (0x14eba0,0x14ec38,0x14eba0),(0x151ae8,0x151b2c,0x151ae8)]
+         (0x14eba0,0x14ec38,0x14eba0),(0x151ae8,0x151b2c,0x151ae8),
+         (0x153690,0x1536b4,0x153690),(0x159218,0x159438,0x159218),
+         (0x1576ec,0x157914,0x1576ec),(0x1554d0,0x15560c,0x1554d0),
+         (0x15a044,0x15a15c,0x15a044),(0x1a7c6c,0x1a7cbc,0x1a7c6c),(0x1b09a0,0x1b09e4,0x1b09a0)]
 out+=['bool Cpu::tryHotBlock() {', 'static bool disabled = getenv("HL5_NO_AOT") != nullptr;', 'if (disabled || g_prof) return false;', 'int region=-1; switch(r[15]) {']
 for i,(lo,hi,entry) in enumerate(regions):out.append(f'case 0x{entry:x}: region={i}; break;')
 out+=['default: return false; }',f'static int valid[{len(regions)}]={{}};','if (!valid[region]) { bool ok=true; switch(region) {']

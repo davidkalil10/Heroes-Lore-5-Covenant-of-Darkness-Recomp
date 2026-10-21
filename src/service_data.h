@@ -6,7 +6,7 @@
 #include <vector>
 
 namespace services {
-constexpr const char* Version = "1.1.5";
+constexpr const char* Version = "1.1.6";
 constexpr const char* Repository = "davidkalil10/Heroes-Lore-5-Covenant-of-Darkness-Recomp";
 struct Release {
     std::string tag, name, notes, asset, url, digest;

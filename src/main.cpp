@@ -665,7 +665,10 @@ int main(int argc, char** argv) {
         }
         if(scriptMenus.count(f) && scriptMenus[f]>=0) {
             if(gm::r32(0x1428bc)!=0xe59f3020)return 1;
+            const auto menuStart=SDL_GetPerformanceCounter();
             game.cpu.call(0x1428bc,{0,3,u32(scriptMenus[f])});
+            if(SDL_getenv("HL5_BENCH")) fprintf(stderr,"[menu-bench] open_ms=%.3f\n",
+                1000.0*(SDL_GetPerformanceCounter()-menuStart)/SDL_GetPerformanceFrequency());
         }
         if(scriptTouches.count(f))game.touch(EV_PTR_PRESS,scriptTouches[f].first,scriptTouches[f].second,0);
         if(scriptTouches.count(f-2))game.touch(EV_PTR_RELEASE,scriptTouches[f-2].first,scriptTouches[f-2].second,0);
@@ -713,6 +716,9 @@ int main(int argc, char** argv) {
                 game.screen.px[y*w+x]=0xff000000|(((red<<3)|(red>>2))<<16)|(((green<<2)|(green>>4))<<8)|((blue<<3)|(blue>>2));
             }
         }
+#ifdef __SWITCH__
+        const auto guestEnd=std::chrono::steady_clock::now();
+#endif
         if (benchmark) frameTimes.push_back(std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now()-loopStart).count());
         if (!dumpDir.empty() && dumpEvery > 0 && (f % dumpEvery == 0)) dumpBmp(dumpDir + "/frame_" + std::to_string(f) + ".bmp", game.screen);
         if (!headless && game.screen.w > 0) {
@@ -749,7 +755,26 @@ int main(int argc, char** argv) {
                 }
             }
         }
-        if (f % 60 == 0) {
+#ifdef __SWITCH__
+        // One compact sample per ten seconds, including input and presentation.
+        // This measures the device instead of inferring Switch FPS from PC tests.
+        static auto sampleStart=frameStart;
+        static unsigned sampleFrames=0;
+        static double inputMs=0,guestMs=0,presentMs=0;
+        const auto sampleEnd=std::chrono::steady_clock::now();
+        inputMs+=std::chrono::duration<double,std::milli>(loopStart-frameStart).count();
+        guestMs+=std::chrono::duration<double,std::milli>(guestEnd-loopStart).count();
+        presentMs+=std::chrono::duration<double,std::milli>(sampleEnd-guestEnd).count();
+        ++sampleFrames;
+        const double sampleSeconds=std::chrono::duration<double>(sampleEnd-sampleStart).count();
+        if(sampleSeconds>=10) {
+            LOGI("[switch-perf] fps=%.1f input_ms=%.2f guest_ms=%.2f present_wait_ms=%.2f canvas=%dx%d\n",
+                 sampleFrames/sampleSeconds,inputMs/sampleFrames,guestMs/sampleFrames,
+                 presentMs/sampleFrames,game.screen.w,game.screen.h);
+            sampleFrames=0;inputMs=guestMs=presentMs=0;sampleStart=sampleEnd;
+        }
+#endif
+        if (benchmark && f % 60 == 0) {
             double s = std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
             LOGI("[run] frame %d t=%.1fs icount=%.1fM draws=%llu screen=%dx%d\n", f, s, game.cpu.icount / 1e6, (unsigned long long)game.screen.draws, game.screen.w, game.screen.h);
         }
@@ -761,7 +786,7 @@ int main(int argc, char** argv) {
         double total=0; for(double ms: sorted) total+=ms;
         LOGI("[bench] frames=%zu mean_ms=%.3f p50_ms=%.3f p95_ms=%.3f max_ms=%.3f\n", sorted.size(),total/sorted.size(),sorted[sorted.size()/2],sorted[(sorted.size()-1)*95/100],sorted.back());
     }
-    if (g_prof) {
+    if (g_prof || SDL_getenv("HL5_PROF_REMAINING")) {
         FILE* pf = fopen("prof.txt", "w");
         for (size_t i = 0; i < g_profHist.size(); i++) if (g_profHist[i]) fprintf(pf, "%08x %u\n", (unsigned)(0x00100000 + i * 4), g_profHist[i]);
         fclose(pf);

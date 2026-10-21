@@ -175,3 +175,57 @@ asset names and save paths. Metadata is 1.1.5 / Android versionCode 7. README an
 release notes describe upgrading from 1.1.4 to test startup notice, byte progress,
 installation and relaunch. Versions with the old Switch installer still require
 one manual NRO replacement; already-installed 1.1.4 can use its corrected updater.
+
+
+## 1.1.6 — Switch performance investigation, 2026-10-21
+
+User confirmed successful OTA but reported general Switch slowness (movement,
+attacks and 4–5-second menu opening). They entered hbmenu via R and then added a
+HOME shortcut; the forwarder's effective launch mode has not been independently
+verified. Do not dismiss the gameplay report as a menu-only issue.
+
+Profiled with existing AOT enabled (`HL5_PROF_REMAINING`). Added seven measured,
+opcode-guarded AOT regions using the unchanged decoder generator: 0x153690,
+0x159218, 0x1576ec, 0x1554d0, 0x15a044, 0x1a7c6c, 0x1b09a0. Cpu::run's entry map
+must match the generator. There are now 14 regions and 28 required differential
+checks. Never independently rewrite the generated ARM semantics.
+
+`src/core/menu_blur.cpp` accelerates the RGB565 backdrop at 0x151a68, only at
+column zero with the known diameter=2 and bounded packed buffers. It computes
+all but the final pixel of each row in original order, then lets the original
+instructions calculate the last pixel. This restores registers, flags and stack
+scratch at 0x151bb8; instruction count excludes skipped work (unlike AOT's exact
+icount). A full-function opcode guard and shape/range checks fall back to the
+original. Regenerate/check its constants with tools/generate_menu_blur_guard.py.
+
+`HL5_NO_MENU_BLUR` disables this hook; `HL5_VERIFY_MENU_BLUR` compares top,
+interior and bottom rows with the original interpreter, all 128 MiB, registers
+and flags (excluding icount). PC diagnostics only: two snapshots use 256 MiB.
+Run `python tools/verify_menu_blur.py --exe build/hl5.exe` (Linux build/hl5).
+Both CI host builds run it. Tests cover both languages and Native/Wide/Auto;
+the script may encounter more than one blur per run, so require at least three
+row checks. Other kernels/formats retain the original path.
+
+Routine translated-string, resource-load and frame logs are now opt-in with
+HL5_TRACE_TRANSLATIONS, HL5_TRACE_IO and HL5_BENCH respectively. Errors/startup
+logs remain. Switch keeps its diagnostic boot log and records aggregate timing
+every ten seconds: input_ms (event/input work), guest_ms (game execution),
+present_wait_ms (presentation plus pacing), fps (application loop, not simulation
+ticks), and guest canvas size. Do not infer GPU cost solely from present_wait_ms.
+Switch uses O3, as desktop/Android already do. No clock/overclock changes.
+
+PC paired scene benchmark, three repetitions after frame 950, fixed 16-ms clock,
+1,600 frames, scripted directions/actions, PT-BR, no window/audio/profiler:
+Wide median mean time 2.346 -> 2.049 ms (~13% reduction), p95 6.704 -> 5.445 ms.
+Native had no consistent gain (median mean 1.535 -> 1.605 ms, variable host load).
+Final menu-specific measurements, three runs per variant without the verifier,
+were median 128.9 -> 14.5 ms Native and 374.2 -> 45.6 ms Wide (about 8–9x).
+The disable toggle is cached so the reference has no environment lookup per
+pixel. Do not extrapolate device FPS from these measurements.
+Before/after scene captures were identical. Reports and baseline exe are ignored
+under build/gameplay-performance, build/menu-performance and build/hl5-before-sprites.exe.
+
+Full local checks: CTest, runtime, aspect, services, localization, UI and menu-blur
+scripts. Preserve the distinction between PC verification, cross-compilation and
+real hardware. Switch speed still needs the user's device test; remaining general
+slowness may require further measured native acceleration. Metadata 1.1.6 / code 8.
