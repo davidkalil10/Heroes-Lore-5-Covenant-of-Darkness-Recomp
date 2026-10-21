@@ -33,8 +33,11 @@ Os pacotes prontos para jogar ficam em **[Releases](https://github.com/davidkali
 | Android | APK universal ou ARM64 |
 | Nintendo Switch | Homebrew `.nro` com recursos embutidos |
 
-## ✨ Recursos e novidades da v1.1.3
+## ✨ Recursos e novidades da v1.1.4
 
+- **Atualização ao iniciar:** aviso visível durante a busca, nova tentativa se a conexão falhar e abertura automática do painel quando houver uma versão nova.
+- **Progresso do download:** barra, percentual e MB recebidos, incluindo no Switch.
+- **Instalação no Switch corrigida:** cópia em blocos, conferência do novo NRO e recuperação da versão anterior se a troca falhar.
 - **Interface PT-BR revisada:** rótulos próprios para botões, abas e colunas de atributos, mantendo os nomes completos nos títulos.
 - **Comprar / Salvar no HUD:** a fonte respeita a largura dos botões em Native e Wide, sem invadir os vizinhos.
 - **Configurações integradas:** nova linha **Opções do port** dentro das configurações originais do jogo; a engrenagem flutuante foi removida.
@@ -246,3 +249,15 @@ promessa de FPS em todos os aparelhos. Métricas e limites estão em `docs/RUNTI
 Heroes Lore e seus recursos originais pertencem aos respectivos titulares.
 Dependências mantêm suas licenças: stb, nlohmann/json, fonte Inter e certificados
 de autoridades públicas. Consulte os avisos em `src/vendor/` e `assets/`.
+
+## 🔄 Atualização no Switch — versões antigas
+
+Se a instalação automática mostrar **Function not implemented**, substitua o NRO
+manualmente pela v1.1.4 ou superior, no mesmo caminho do cartão SD. Esta passagem
+manual é necessária uma vez porque o instalador antigo precisa receber a própria
+correção. Os saves ficam na pasta de dados; não apague essa pasta.
+
+Depois dessa passagem, use **Opções do port → Verificar atualizações**. O download
+mostra percentual e MB recebidos. Ao concluir a instalação, feche o jogo pelo
+botão indicado para iniciar a versão nova. A versão anterior do NRO fica guardada.
+A verificação ao iniciar respeita a opção **Verificar atualizações ao abrir**.

@@ -1891,9 +1891,13 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
                     java.io.InputStream in = conn.getInputStream();
                     java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
                     byte[] buf = new byte[4096];
-                    int n;
+                    int n;long received=0,total=Math.max(0,conn.getContentLength());
+                    nativeDownloadProgress(0,total);
                     while ((n = in.read(buf)) != -1) {
+                        received+=n;
+                        if(received>128L*1024*1024)throw new java.io.IOException("Update too large");
                         out.write(buf, 0, n);
+                        nativeDownloadProgress(received,total);
                     }
                     in.close();
                     conn.disconnect();
@@ -1959,6 +1963,8 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         }
     }
 
+    public static native void nativeDownloadProgress(long received,long total);
+
     public static boolean downloadFile(String urlStr, String destPath) {
         try {
             String currentUrl = urlStr;
@@ -1993,9 +1999,13 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
                     java.io.InputStream in = conn.getInputStream();
                     java.io.FileOutputStream out = new java.io.FileOutputStream(destFile);
                     byte[] buf = new byte[8192];
-                    int n;
+                    int n;long received=0,total=Math.max(0,conn.getContentLength());
+                    nativeDownloadProgress(0,total);
                     while ((n = in.read(buf)) != -1) {
+                        received+=n;
+                        if(received>128L*1024*1024)throw new java.io.IOException("Update too large");
                         out.write(buf, 0, n);
+                        nativeDownloadProgress(received,total);
                     }
                     out.flush();
                     out.close();

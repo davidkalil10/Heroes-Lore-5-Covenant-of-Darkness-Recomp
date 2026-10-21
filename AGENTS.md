@@ -353,3 +353,19 @@ existing live Trans pointer caches and UTF-8 layout guards.
 Required checks: CTest plus verify_runtime/aspect/services/localization/ui.py.
 The UI verifier now checks explicit native title/game access and touch. Test paths
 must remain disposable. Version bump uses bump_version.py; code 5 for 1.1.3.
+
+## 15. Version 1.1.4 — updater regression and Switch copy primitives
+
+Read the 1.1.4 SERVICES/HANDOFF sections. Do not use filesystem::copy_file for
+Switch NRO installation: libnx returned Function not implemented on user hardware.
+installPortableUpdate uses stdio streaming + C rename, verifies before unmounting
+RomFS, retains a backup and rolls back on swap failure. No guest execution may
+resume after unmount; envSetNextLoad targets the exact launched NRO on success.
+
+Startup check result must remain visible without a gear: one-shot notice and
+checking banner, bounded retries and explicit autoCheck=false preference. Progress
+is worker-owned byte counts published under mutex; render only on main thread.
+Preserve TLS verification/CA; earlier ports' TLS settings are not an example to copy.
+Required checks remain CTest, runtime/aspect/services/localization/ui verifiers.
+The services verifier now also requires build/hl5_download_tests and uses a local
+HTTP server to validate real redirect/stream progress with no external accounts.

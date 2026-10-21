@@ -534,6 +534,7 @@ int main(int argc, char** argv) {
     for (int f = 0; !game.quit && (frames < 0 || f < frames); f++) {
 #endif
         auto frameStart = std::chrono::steady_clock::now();
+        if(!headless){services::pollStartup(SDL_GetTicks64());serviceui::poll();}
         if(!headless && f==settingsAt) serviceui::open();
         if (!headless) {
             SDL_Event e;

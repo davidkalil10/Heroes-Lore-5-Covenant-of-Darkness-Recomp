@@ -1,22 +1,18 @@
-## Heroes Lore 5 — v1.1.3
+## Heroes Lore 5 — v1.1.4
 
-### Configurações integradas ao jogo
+- **Verificação ao iniciar visível:** mostra a busca e abre o aviso quando existe uma versão nova. Faz novas tentativas após falha de conexão e respeita a preferência de verificação automática.
+- **Download com progresso:** barra, percentual e MB recebidos no Switch e nas demais plataformas.
+- **Instalador do Switch corrigido:** substituída a cópia que retornava “Function not implemented” por leitura/escrita em blocos. O NRO novo é conferido antes da troca, com backup e recuperação da versão anterior em caso de falha.
+- O Switch prepara o relançamento do NRO instalado ao fechar o aplicativo.
+- Textos de versão instalada/disponível e download revisados em PT-BR. README e guias de continuidade atualizados.
 
-- Nova entrada **Opções do port** dentro das configurações originais, no título e durante a campanha.
-- A engrenagem flutuante foi removida. A nova linha acompanha o tamanho do menu original e aceita toque/clique, teclado e controle.
-- **F10 e R3** continuam abrindo o painel diretamente. Voltar fecha o painel e mantém as opções originais disponíveis.
-- As opções originais continuam funcionando sem abrir duas janelas ao mesmo tempo.
+### Para quem está no Switch com o instalador antigo
 
-### Correção do idioma após atualizar
+**Substitua o NRO manualmente uma vez para receber esta correção**, usando o mesmo caminho no cartão SD. Não apague a pasta de dados/saves. O aplicativo antigo não consegue corrigir sua própria rotina de cópia apenas baixando esta release; as próximas atualizações usarão o instalador corrigido.
 
-- Corrigida a extração Android que podia abrir a cópia antiga de um recurso e truncá-la durante a atualização.
-- A nova versão lê os recursos diretamente do APK, valida tamanho e SHA-256 e só então substitui a cópia extraída.
-- O dicionário PT-BR completo também está incorporado ao executável: menus, diálogos e o painel personalizado usam a mesma tradução, independentemente da cópia externa.
-- Troca de idioma em tempo real preservada; PT-BR continua sendo o padrão. “Velocidade” foi abreviado para caber antes do valor nas opções originais.
+### Pacotes e versão
 
-### Atualização
-
-Versão **1.1.3**, **versionCode 5** no Android. Assinatura, nomes dos pacotes e caminhos dos saves foram mantidos. Atualize pelo verificador do aplicativo ou pelos arquivos desta release; não é necessário desinstalar.
+Versão **1.1.4**, **versionCode 6** no Android; assinatura, nomes dos pacotes e caminhos dos saves preservados.
 
 | Plataforma | Pacote |
 | --- | --- |
@@ -25,8 +21,8 @@ Versão **1.1.3**, **versionCode 5** no Android. Assinatura, nomes dos pacotes e
 | Android | `heroes_lore_5_android_arm64.apk` ou `heroes_lore_5_android_universal.apk` |
 | Nintendo Switch | `heroes_lore_5.nro` |
 
-O `.exe` avulso é destinado a instalações Windows que já possuem recursos e dependências. Para instalação nova, use o ZIP completo.
+Para instalação Windows nova, use o ZIP completo; o EXE avulso requer os recursos e dependências já instalados.
 
-### Verificações
+### Validação
 
-Testes automatizados de CPU/áudio, expansão de cenário, idioma ao vivo, nuvem e empacotamento, além de substituição segura de recursos e navegação nas configurações originais. README e guias de continuidade foram atualizados. A conferência final de atualização e apresentação no Android/Switch depende dos testes nos aparelhos.
+Testes de checagem automática/repetição/fechamento, download real com progresso intermediário em servidor local, integridade e recuperação da troca do NRO. Mantidas as verificações de CPU, áudio, tela, tradução e nuvem. A confirmação final de instalação e relançamento no Switch depende do teste no aparelho.

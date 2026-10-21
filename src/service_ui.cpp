@@ -10,7 +10,7 @@
 namespace serviceui {
 static bool flag(const char* name) {auto value=SDL_getenv(name);return value && *value;}
 enum class Page {Settings,Cloud,Update,ConfirmUpload,ConfirmRestore,ConfirmLogout};
-static bool opened=false;
+static bool opened=false,startupPrompt=false;
 static Page page=Page::Settings;
 static int selected=0,windowW=0,windowH=0;
 static std::function<void()> cycle;
@@ -99,7 +99,10 @@ void init(const std::string& fontPath,std::function<void()> cycleAspect,std::fun
 }
 void shutdown() {if(fontTexture) SDL_DestroyTexture(fontTexture);fontTexture=nullptr;fontBitmap.clear();opened=false;}
 bool active() {return opened;}
-void open() {opened=true;page=Page::Settings;selected=0;SDL_Log("[settings] opened by explicit action");}
+void poll() {
+    if(!opened && services::takeUpdateNotice()){open();startupPrompt=true;page=Page::Update;}
+}
+void open() {startupPrompt=false;opened=true;page=Page::Settings;selected=0;SDL_Log("[settings] opened by explicit action");}
 void restoredToTitle() {opened=false;hits.clear();}
 static void go(Page next) {page=next;selected=0;hits.clear();}
 static std::vector<std::string> rows(const services::Status& s) {
@@ -124,6 +127,7 @@ static void back() {
     auto s=services::status();
     if(s.restartRequired) return;
     if(s.busy) {if(!s.userCode.empty()) services::cancelLogin();return;}
+    if(page==Page::Update && startupPrompt){opened=false;startupPrompt=false;return;}
     if(page==Page::Settings) opened=false;
     else if(page==Page::ConfirmUpload || page==Page::ConfirmRestore || page==Page::ConfirmLogout) go(Page::Cloud);
     else go(Page::Settings);
@@ -154,9 +158,9 @@ static void activate() {
     else if(page==Page::ConfirmRestore) {int choice=selected;go(Page::Cloud);if(choice==0) services::restoreBackup();}
     else if(page==Page::ConfirmLogout) {int choice=selected;go(Page::Cloud);if(choice==0) services::logout();}
     else if(page==Page::Update) {
-        if(s.downloadReady) {if(selected==0) services::applyUpdate();else go(Page::Settings);}
-        else if(s.updateAvailable) {if(selected==0) services::downloadUpdate();else if(selected==1) services::checkUpdate(true);else go(Page::Settings);}
-        else {if(selected==0) services::checkUpdate(true);else go(Page::Settings);}
+        if(s.downloadReady) {if(selected==0) services::applyUpdate();else back();}
+        else if(s.updateAvailable) {if(selected==0) services::downloadUpdate();else if(selected==1) services::checkUpdate(true);else back();}
+        else {if(selected==0) services::checkUpdate(true);else back();}
     }
 }
 bool event(const SDL_Event& e,bool switchButtons) {
@@ -213,7 +217,15 @@ void draw(SDL_Renderer* r,int width,int height) {
     }
     SDL_SetRenderDrawBlendMode(r,SDL_BLENDMODE_BLEND);
     auto s=services::status();
-    if(!opened) return;
+    if(!opened) {
+        if(s.checkingUpdates) {
+            int font=std::clamp(width/45,14,24);
+            SDL_Rect banner{12,height-font-30,width-24,font+18};
+            SDL_SetRenderDrawColor(r,18,27,42,235);SDL_RenderFillRect(r,&banner);
+            text(r,"Checking GitHub releases...",22,float(banner.y+3),float(font),{230,238,245,255});
+        }
+        return;
+    }
     SDL_SetRenderDrawColor(r,0,0,0,185);SDL_RenderFillRect(r,nullptr);
     int panelW=std::min(740,std::max(180,width-24)),panelH=std::min(650,std::max(180,height-24));
     if(mobileLayout()) {panelW=std::min(width*94/100,height*3/2);panelH=height*(height>width?76:94)/100;}
@@ -234,7 +246,7 @@ void draw(SDL_Renderer* r,int width,int height) {
     else if(page==Page::Cloud) {
         info=s.connected?"Google Drive connected. Save in the game before uploading.":"Continue your Heroes Lore 5 progress on another platform using the same Google account.";
         if(s.backupExists) info+="\nCloud: "+s.backupDate+"\n"+s.backupSummary;
-    } else info="Installed: "+std::string(services::Version)+(s.updateAvailable?" | Available: "+s.release.tag:"")+"\nUpdates preserve your saved progress and Google login.";
+    } else info=Locale::text("Installed:")+" "+std::string(services::Version)+(s.updateAvailable?" | "+Locale::text("Available:")+" "+s.release.tag:"")+"\n"+Locale::text("Updates preserve your saved progress and Google login.");
     y+=wrapped(r,info,x,y,panelW-pad*2,font-1,4)+10;
     if(!s.userCode.empty()) {
         y+=wrapped(r,s.verificationUrl,x,y,panelW-pad*2,font,2)+5;
@@ -251,6 +263,16 @@ void draw(SDL_Renderer* r,int width,int height) {
         y+=rowH+5;
     }
     y+=8;
+    if(s.downloading) {
+        int percent=s.totalBytes?int(std::min<uint64_t>(100,s.downloadedBytes*100/s.totalBytes)):0;
+        char detail[96];snprintf(detail,sizeof(detail),"%d%%  |  %.1f / %.1f MB",percent,double(s.downloadedBytes)/1048576,double(s.totalBytes)/1048576);
+        text(r,detail,float(x),float(y),float(font),{220,235,250,255});y+=font+12;
+        SDL_Rect track{x,y,panelW-pad*2,std::max(14,font)};
+        SDL_SetRenderDrawColor(r,12,20,32,255);SDL_RenderFillRect(r,&track);
+        SDL_Rect fill{track.x,track.y,track.w*percent/100,track.h};
+        SDL_SetRenderDrawColor(r,63,191,223,255);SDL_RenderFillRect(r,&fill);
+        SDL_SetRenderDrawColor(r,103,147,176,255);SDL_RenderDrawRect(r,&track);y+=track.h+14;
+    }
     wrapped(r,s.message,x,y,panelW-pad*2,std::max(12,font-2),std::max(1,(panel.y+panel.h-font-20-y)/(font+3)));
     text(r,"Arrows / D-pad: move     Confirm: select     Back: close",float(x),float(panel.y+panel.h-font-10),float(std::max(10,font-6)),{150,175,198,255});
 }

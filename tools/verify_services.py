@@ -17,6 +17,29 @@ def main():
     reports=ROOT/'build/services-verification'
     reports.mkdir(parents=True,exist_ok=True)
     checks=[]
+    # Test the real WinHTTP/libcurl file transport against a local chunked server.
+    # No GitHub/Google request or real account is involved.
+    import http.server,threading,time
+    payload=bytes(range(256))*8192
+    class DownloadHandler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path=='/redirect':
+                self.send_response(302);self.send_header('Location','/update');self.end_headers();return
+            self.send_response(200);self.send_header('Content-Length',str(len(payload)));self.end_headers()
+            for start in range(0,len(payload),16384):
+                self.wfile.write(payload[start:start+16384]);self.wfile.flush();time.sleep(.002)
+        def log_message(self,*args):pass
+    server=http.server.ThreadingHTTPServer(('127.0.0.1',0),DownloadHandler)
+    thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+    try:
+        with tempfile.TemporaryDirectory(prefix='hl5-download-') as testdir:
+            output=Path(testdir)/'update.download'
+            binary=ROOT/'build'/('hl5_download_tests.exe' if os.name=='nt' else 'hl5_download_tests')
+            subprocess.run([str(binary),f'http://127.0.0.1:{server.server_port}/redirect',str(output)],check=True,timeout=30)
+            assert output.read_bytes()==payload,'Transport changed streamed bytes'
+            checks.append('native_streaming_progress')
+    finally:server.shutdown();server.server_close();thread.join()
+
     with tempfile.TemporaryDirectory(prefix='hl5-installer-') as tmp:
         base=Path(tmp).resolve()
         assert base.parent==Path(tempfile.gettempdir()).resolve()

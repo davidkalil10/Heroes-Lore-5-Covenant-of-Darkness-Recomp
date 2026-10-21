@@ -18,10 +18,11 @@
 using namespace services;
 using json=nlohmann::json;
 namespace fs=std::filesystem;
-static std::atomic<int> uploads{0};
+static std::atomic<int> uploads{0},updateChecks{0},offlineChecks{0};
+static std::atomic<bool> holdDownload{false};
 static std::string remotePackage;
 static bool remoteExists=true,corruptDownload=false;
-static std::string updateBytes(128,'\0');
+static std::string updateBytes(2*1024*1024,'\0');
 static json releaseJson() {
     updateBytes[0]='P';updateBytes[1]='K';
     std::string asset=platformName()=="Windows"?"heroes_lore_5_windows_x64.zip":"heroes_lore_5_linux_x86_64.AppImage";
@@ -35,11 +36,14 @@ namespace services {
 void initNetwork() {}
 void shutdownNetwork() {}
 bool installAndroidApk(const std::string&) {return false;}
-void downloadFile(const std::string&,const std::string& path) {
+void downloadFile(const std::string&,const std::string& path,const DownloadProgress& progress) {
+    if(progress)progress(updateBytes.size()/2,updateBytes.size());
+    while(holdDownload)SDL_Delay(1);
+    if(progress)progress(updateBytes.size(),updateBytes.size());
     auto bytes=updateBytes;if(corruptDownload) bytes[10]='!';writeText(path,bytes);
 }
 HttpResponse httpExecute(const std::string& method,const std::string& url,const std::vector<std::string>&,const std::string& body) {
-    if(url.find("api.github.com")!=std::string::npos) return {200,releaseJson().dump()};
+    if(url.find("api.github.com")!=std::string::npos){updateChecks++;if(offlineChecks>0){offlineChecks--;return {0,""};}return {200,releaseJson().dump()};}
     if(url.find("alt=media")!=std::string::npos) return {200,remotePackage};
     if(url.find("upload/drive")!=std::string::npos) {uploads++;return {200,"{\"id\":\"save\"}"};}
     if(url.find("mimeType")!=std::string::npos) return {200,"{\"files\":[{\"id\":\"folder\"}]}"};
@@ -105,6 +109,18 @@ int main(int argc,char** argv) {
         writeText((temporary/"services.json").string(),"{\"check_updates\":false}");
         writeText((temporary/"cloud_auth.json").string(),"{\"refresh_token\":\"fake\",\"access_token\":\"fake\",\"expires_at\":9999999999}");
         init(temporary.string(),"not-launched",argc>1?argv[1]:"assets");
+        std::string nroBytes(8192,'N');nroBytes.replace(16,4,"NRO0");
+        Release nro;nro.asset="heroes_lore_5.nro";nro.size=nroBytes.size();nro.digest="sha256:"+sha256({nroBytes.begin(),nroBytes.end()});
+        auto portable=(temporary/"heroes_lore_5.nro").string(),download=(temporary/"download.nro").string();
+        writeText(portable,"previous NRO");writeText(download,nroBytes);
+        auto nroBackup=installPortableUpdate(download,portable,nro);
+        require(readText(portable)==nroBytes && readText(nroBackup)=="previous NRO","Portable NRO installation/backup");
+        bool unmounted=false;writeText(download,std::string(nroBytes.size(),'X'));
+        rejects([&](){installPortableUpdate(download,portable,nro,[&](){unmounted=true;});},"Corrupt NRO staged");
+        require(!unmounted && readText(portable)==nroBytes,"Invalid NRO changed current app or unmounted RomFS");
+        writeText(download,nroBytes);
+        rejects([&](){installPortableUpdate(download,portable,nro,[&](){fs::remove(portable+".new");});},"Missing staged NRO accepted");
+        require(readText(portable)==nroBytes,"Portable swap failure did not restore previous NRO");
         auto extracted=(temporary/"extracted/locales/pt-BR.json").string();
         auto copyAsset=[&](const std::string& bytes,size_t expected,const std::string& digest){
             size_t offset=0;
@@ -183,7 +199,13 @@ int main(int argc,char** argv) {
         uploadBackup();waitTask();require(uploads==1,"Drive upload route");
         checkUpdate(true);waitTask();require(status().updateAvailable,"release update not found");
         corruptDownload=true;downloadUpdate();waitTask();require(!status().downloadReady,"corrupt update accepted");
-        corruptDownload=false;downloadUpdate();waitTask();require(status().downloadReady,"valid download rejected");
+        serviceui::open();key(SDLK_DOWN);key(SDLK_DOWN);key(SDLK_RETURN);waitTask();
+        Locale::setLanguage("pt-BR",false);
+        corruptDownload=false;holdDownload=true;downloadUpdate();
+        for(int i=0;i<200 && status().downloadedBytes!=updateBytes.size()/2;i++)SDL_Delay(1);
+        auto progress=status();require(progress.busy && progress.downloading && progress.downloadedBytes==updateBytes.size()/2 && progress.totalBytes==updateBytes.size(),"Live byte progress missing");
+        saveImage(1280,720,"update-progress-switch.bmp");
+        holdDownload=false;waitTask();require(status().downloadReady && !status().downloading,"valid download rejected");
         writeText((temporary/"internal/kickass").string(),"old in-memory campaign");
         auto beforeRestore=readSaves(temporary.string());
         restoreBackup();waitTask();require(status().restoreReady,"restore must stage main-thread handoff");
@@ -193,7 +215,22 @@ int main(int argc,char** argv) {
         serviceui::restoredToTitle();require(!serviceui::active(),"restore left modal open");
         serviceui::draw(renderer,480,800);saveImage(480,800,"restore-complete.bmp");
         require(readSaves(temporary.string())==original,"Drive restore changed file content");
-        serviceui::shutdown();shutdown();SDL_DestroyRenderer(renderer);SDL_DestroyWindow(window);SDL_Quit();
+        serviceui::shutdown();shutdown();
+        writeText((temporary/"services.json").string(),"{\"check_updates\":true}");
+        int checks=updateChecks;offlineChecks=1;
+        init(temporary.string(),"not-launched",argc>1?argv[1]:"assets");waitTask();
+        require(updateChecks==checks+1 && !status().updateAvailable,"Startup check was not attempted automatically");
+        pollStartup(SDL_GetTicks64()+6000);waitTask();
+        require(updateChecks==checks+2 && status().updateNotice,"Offline startup did not retry or notify");
+        serviceui::init(resourcePath("ui_font.ttf"),[](){},[](){return AspectMode::Auto;});
+        serviceui::poll();require(serviceui::active() && !status().updateNotice,"Startup update did not open notice");
+        Locale::setLanguage("pt-BR",false);saveImage(1280,720,"startup-update-switch.bmp");
+        key(SDLK_ESCAPE);serviceui::poll();require(!serviceui::active(),"Dismissed startup update reopened");
+        serviceui::shutdown();shutdown();
+        writeText((temporary/"services.json").string(),"{\"check_updates\":false}");checks=updateChecks;
+        init(temporary.string(),"not-launched",argc>1?argv[1]:"assets");waitTask();pollStartup(SDL_GetTicks64()+60000);
+        require(updateChecks==checks && !status().updateNotice,"Disabled startup preference ignored");shutdown();
+        SDL_DestroyRenderer(renderer);SDL_DestroyWindow(window);SDL_Quit();
         // This directory was freshly created by this test, never a player data root.
         require(fs::canonical(temporary).parent_path()==fs::canonical(fs::temp_directory_path()) && temporary.filename().string().rfind("hl5-services-",0)==0,"Unexpected cleanup path");
         fs::remove_all(temporary);

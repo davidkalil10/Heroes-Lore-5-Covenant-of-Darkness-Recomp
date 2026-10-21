@@ -1,4 +1,4 @@
-# Platform services — version 1.1.3
+# Platform services — version 1.1.4
 
 ## Architecture and reference ports
 
@@ -92,7 +92,8 @@ installer; permission/installation stays with Android. The APK provider grants
 read access only to APKs within the app's own `data/updates` directory.
 
 Auto-check is on by default; `services.json` stores the user's choice. A newer
-release sets a badge in Settings; offline startup remains playable. A `main` push
+release opens the Update panel once; a banner is visible during the check.
+Offline startup remains playable and retries are bounded to three attempts. A `main` push
 only creates Actions artifacts. Publish a stable release/tag for the updater to
 see it, keeping all version metadata consistent:
 
@@ -212,3 +213,44 @@ new digest, preservation on failure, R3/F10 and embedded PT without external ass
 verify_ui.py covers explicit title/game entry, close/reopen and original options
 remaining independent. Keep actual device upgrade verification separate from CI.
 Version 1.1.3, Android code 5, same package names/signing/save paths.
+
+## 1.1.4 — startup notice, streaming progress and libnx installation
+
+The screenshot from Switch 1.1.1 identified filesystem::copy_file returning ENOSYS
+for the .download → .new stage. All three earlier ports use fread/fwrite, C rename
+and envSetNextLoad. HL5 now uses the same supported copy primitives through
+service_data::installPortableUpdate, retaining stronger staged verification and
+rollback instead of initially truncating the running NRO.
+
+The helper closes both streams, checks copied size and package magic/SHA-256,
+then calls the Switch RomFS-release callback, renames the original to a unique
+.old-* sibling and commits the staged NRO. Commit failure restores the previous
+file; downloads/size/hash failures never unmount RomFS or touch the running NRO.
+After unmounting, guest frames remain blocked, including on error. Success sets
+envSetNextLoad for the exact launched NRO path; closing the app starts that path.
+Linux AppImage reuses the portable staged swap. Windows/Android installers remain.
+
+Startup requests already existed, but the visible badge was removed with the
+floating gear. Status now exposes checkingUpdates/updateNotice; the shared main
+loop polls retries and the host UI consumes a one-shot notice. Checking is shown
+as a banner without pausing play; a discovered release opens Update once. Back
+from that startup prompt dismisses it to the game. Explicit saved autoCheck=false
+is respected. HTTP/offline/parse failures retry after 5 then 15 seconds, at most
+three automatic attempts. No-update and offline startup do not show a modal.
+
+Downloads stream to disk with byte/total snapshots under the services mutex:
+WinHTTP reads, libcurl XFERINFO (Switch/Linux), and the Android synchronous JNI
+download callback. UI draws a percentage/MB label and bar while downloading,
+then verifies before enabling installation. Keep peer/host TLS verification and
+the RomFS CA bundle; do not copy the earlier ports' disabled TLS policy.
+
+CTest covers startup retry/notice/dismiss/preference, intermediate progress and
+portable NRO backup, corrupt download rejection before unmount, and rollback.
+verify_services.py runs the actual native transport against a local redirecting
+HTTP server, compares 2 MiB of bytes and requires intermediate progress callbacks.
+Only temporary files and mocked Google/GitHub are used. Other runtime/locale/UI
+verifiers remain required. No local test substitutes for Switch hardware testing.
+
+Migration: Switch versions with the broken installer need one manual NRO
+replacement to receive 1.1.4. Publishing a fixed release cannot change the copy
+routine in the already-running 1.1.1 executable. Preserve the data directory.

@@ -145,3 +145,24 @@ expanded native UI navigation, close/reopen and touch regressions. See the lates
 verification summaries under ignored build/ for local evidence. These checks do
 not constitute Android/Switch hardware execution. User will validate OTA and UI
 on devices; don't claim those tests happened here. Metadata: 1.1.3 / Android code 5.
+
+## 1.1.4 continuation — updater feedback
+
+User accepted 1.1.3 UI but reported startup update checks invisible, no Switch
+download progress, and ENOSYS copying downloaded NRO on Switch 1.1.1. Inspected
+updater.cpp in all three earlier projects: streaming progress and stdio copies
+are present there. Implemented supported fread/fwrite + C rename with staged
+size/magic/SHA validation, retained NRO backup/rollback, RomFS teardown ordering,
+and envSetNextLoad after success. Never resume guest after RomFS is released.
+
+Startup now shows checking and opens a one-shot Update notice when available;
+back dismisses to gameplay. The old removed gear badge had hidden results.
+Added bounded offline retries and preserved the user's auto-check preference.
+Streaming transport reports actual bytes to UI on all four platforms. Dynamic
+Installed/Available/Download labels are translated; full embedded PT regenerated.
+
+Tests cover mocked startup/retry/dismiss, actual localhost streaming with redirect
+and intermediate progress, and portable NRO staging/backup/rollback without
+copy_file. All test state is disposable. User must manually replace old Switch
+NRO once to receive the installer fix; future updates can use the corrected path.
+Version 1.1.4 / Android code 6. Hardware OTA remains a user validation step.

@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <filesystem>
+#include <cstdio>
+#include <algorithm>
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -21,7 +23,8 @@
 namespace services {
 #if defined(_WIN32)
 static HttpResponse winHttpRequest(const std::string& method, const std::string& url,
-                                  const std::vector<std::string>& headers, const std::string& bodyData) {
+                                  const std::vector<std::string>& headers, const std::string& bodyData,
+                                  FILE* file=nullptr,const DownloadProgress& progress={}) {
   HttpResponse resp;
   std::wstring wurl(url.begin(), url.end());
   URL_COMPONENTS urlComp;
@@ -82,13 +85,20 @@ static HttpResponse winHttpRequest(const std::string& method, const std::string&
       resp.statusCode = (int)dwStatusCode;
     }
 
-    std::vector<char> buffer(4096);
+    uint64_t received=0;DWORD length=0,lengthSize=sizeof(length);
+    WinHttpQueryHeaders(hRequest,WINHTTP_QUERY_CONTENT_LENGTH|WINHTTP_QUERY_FLAG_NUMBER,
+                        WINHTTP_HEADER_NAME_BY_INDEX,&length,&lengthSize,WINHTTP_NO_HEADER_INDEX);
+    if(progress)progress(0,length);
+    std::vector<char> buffer(65536);
     DWORD dwDownloaded = 0;
     while (WinHttpQueryDataAvailable(hRequest, &dwSize) && dwSize > 0) {
-      if(resp.body.size()+dwSize>128*1024*1024) {resp.statusCode=0;break;}
+      if(received+dwSize>128*1024*1024) {resp.statusCode=0;break;}
       if (dwSize > buffer.size()) buffer.resize(dwSize);
       if (WinHttpReadData(hRequest, buffer.data(), dwSize, &dwDownloaded) && dwDownloaded > 0) {
-        resp.body.append(buffer.data(), dwDownloaded);
+        received+=dwDownloaded;
+        if(file){if(fwrite(buffer.data(),1,dwDownloaded,file)!=dwDownloaded){resp.statusCode=0;break;}}
+        else resp.body.append(buffer.data(),dwDownloaded);
+        if(progress)progress(received,length);
       } else {
         break;
       }
@@ -293,19 +303,62 @@ void shutdownNetwork() {
     curl_global_cleanup();
 #endif
 }
-void downloadFile(const std::string& url,const std::string& path) {
+#if defined(__ANDROID__)
+static thread_local const DownloadProgress* androidDownloadProgress=nullptr;
+extern "C" JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_nativeDownloadProgress(JNIEnv*,jclass,jlong done,jlong total) {
+    if(androidDownloadProgress && *androidDownloadProgress)
+        (*androidDownloadProgress)(uint64_t(std::max<jlong>(0,done)),uint64_t(std::max<jlong>(0,total)));
+}
+#elif !defined(_WIN32)
+struct FileDownload {FILE* file;const DownloadProgress* progress;uint64_t bytes=0;};
+static size_t downloadWrite(void* data,size_t size,size_t count,void* user) {
+    auto& d=*static_cast<FileDownload*>(user);size_t bytes=size*count;
+    if(d.bytes+bytes>128*1024*1024)return 0;
+    size_t written=fwrite(data,1,bytes,d.file);d.bytes+=written;return written;
+}
+static int downloadProgress(void* user,curl_off_t total,curl_off_t done,curl_off_t,curl_off_t) {
+    auto& d=*static_cast<FileDownload*>(user);
+    if(total>128*1024*1024 || done>128*1024*1024)return 1;
+    if(*d.progress)(*d.progress)(uint64_t(std::max<curl_off_t>(0,done)),uint64_t(std::max<curl_off_t>(0,total)));
+    return 0;
+}
+#endif
+void downloadFile(const std::string& url,const std::string& path,const DownloadProgress& progress) {
 #ifdef __ANDROID__
     auto* env=(JNIEnv*)SDL_AndroidGetJNIEnv();
     auto method=env->GetStaticMethodID(s_cloudActivityClass,"downloadFile","(Ljava/lang/String;Ljava/lang/String;)Z");
     jstring u=env->NewStringUTF(url.c_str()),p=env->NewStringUTF(path.c_str());
+    androidDownloadProgress=&progress;
     bool ok=env->CallStaticBooleanMethod(s_cloudActivityClass,method,u,p)==JNI_TRUE;
+    androidDownloadProgress=nullptr;
     env->DeleteLocalRef(u);env->DeleteLocalRef(p);
     if(env->ExceptionCheck()) {env->ExceptionClear();ok=false;}
     if(!ok) throw std::runtime_error("Download failed");
+#elif defined(_WIN32)
+    FILE* file=fopen(path.c_str(),"wb");if(!file)throw std::runtime_error("Cannot create download file");
+    auto response=winHttpRequest("GET",url,{"User-Agent: Heroes-Lore-5/"+std::string(Version)},"",file,progress);
+    bool ok=fclose(file)==0;
+    if(response.statusCode!=200 || !ok)throw std::runtime_error("Download failed");
 #else
-    auto result=httpExecute("GET",url,{"User-Agent: Heroes-Lore-5/1.1"});
-    if(result.statusCode!=200) throw std::runtime_error("Download failed (HTTP "+std::to_string(result.statusCode)+")");
-    writeText(path,result.body);
+    FILE* file=fopen(path.c_str(),"wb");if(!file)throw std::runtime_error("Cannot create download file");
+    CURL* curl=curl_easy_init();if(!curl){fclose(file);throw std::runtime_error("Cannot start download");}
+    FileDownload transfer{file,&progress};
+    curl_easy_setopt(curl,CURLOPT_URL,url.c_str());
+    curl_easy_setopt(curl,CURLOPT_USERAGENT,"Heroes-Lore-5 updater");
+    curl_easy_setopt(curl,CURLOPT_FOLLOWLOCATION,1L);
+    curl_easy_setopt(curl,CURLOPT_SSL_VERIFYPEER,1L);curl_easy_setopt(curl,CURLOPT_SSL_VERIFYHOST,2L);
+#ifdef __SWITCH__
+    curl_easy_setopt(curl,CURLOPT_CAINFO,"romfs:/cacert.pem");
+#endif
+    curl_easy_setopt(curl,CURLOPT_NOSIGNAL,1L);curl_easy_setopt(curl,CURLOPT_CONNECTTIMEOUT,10L);
+    curl_easy_setopt(curl,CURLOPT_TIMEOUT,600L);
+    curl_easy_setopt(curl,CURLOPT_LOW_SPEED_LIMIT,1L);curl_easy_setopt(curl,CURLOPT_LOW_SPEED_TIME,90L);
+    curl_easy_setopt(curl,CURLOPT_WRITEFUNCTION,downloadWrite);curl_easy_setopt(curl,CURLOPT_WRITEDATA,&transfer);
+    curl_easy_setopt(curl,CURLOPT_XFERINFOFUNCTION,downloadProgress);curl_easy_setopt(curl,CURLOPT_XFERINFODATA,&transfer);
+    curl_easy_setopt(curl,CURLOPT_NOPROGRESS,0L);
+    CURLcode result=curl_easy_perform(curl);long status=0;curl_easy_getinfo(curl,CURLINFO_RESPONSE_CODE,&status);
+    curl_easy_cleanup(curl);bool written=fclose(file)==0;
+    if(result!=CURLE_OK || status!=200 || !written)throw std::runtime_error("Download failed");
 #endif
 }
 bool installAndroidApk(const std::string& path) {

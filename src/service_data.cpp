@@ -9,6 +9,12 @@
 #include <regex>
 #include <set>
 #include <cctype>
+#include <cstdio>
+#include <cerrno>
+#include <cstring>
+#if defined(__linux__) && !defined(__ANDROID__)
+#include <sys/stat.h>
+#endif
 #include <sstream>
 #include <stdexcept>
 
@@ -155,6 +161,49 @@ bool extractAsset(const std::string& path,size_t expectedSize,const std::string&
         fprintf(stderr,"[assets] %s: %s\n",path.c_str(),error.what());
         std::error_code ec;fs::remove(staged,ec);return false;
     }
+}
+void verifyUpdateFile(const std::string& path,const Release& release) {
+    auto text=readText(path,128*1024*1024);
+    if(text.size()!=release.size)throw std::runtime_error("Incomplete download. Try again.");
+    if(!release.digest.empty() && "sha256:"+sha256({text.begin(),text.end()})!=release.digest)
+        throw std::runtime_error("Update checksum mismatch. Download rejected.");
+    bool valid=release.asset.find(".nro")!=std::string::npos?text.size()>20 && text.substr(16,4)=="NRO0":
+        release.asset.find(".AppImage")!=std::string::npos?text.size()>4 && text.substr(0,4)==std::string("\x7f" "ELF",4):
+        text.size()>4 && text.substr(0,2)=="PK";
+    if(!valid)throw std::runtime_error("Downloaded package has invalid format");
+}
+std::string installPortableUpdate(const std::string& package,const std::string& target,const Release& release,
+                                  const std::function<void()>& beforeSwap) {
+    // libnx does not implement the copy primitive used by filesystem::copy_file.
+    // Match the other ports' portable fread/fwrite path, but never truncate the
+    // running NRO: stage/validate first, rotate the old file, then commit/rollback.
+    auto staged=target+".new";
+    FILE* input=fopen(package.c_str(),"rb");if(!input)throw std::runtime_error("Cannot open downloaded update");
+    FILE* output=fopen(staged.c_str(),"wb");
+    if(!output){fclose(input);throw std::runtime_error("Cannot stage update. Check free space on SD card.");}
+    char buffer[65536];size_t n=0;bool ok=true;uint64_t copied=0;
+    while((n=fread(buffer,1,sizeof(buffer),input))>0) {
+        copied+=n;if(copied>release.size || fwrite(buffer,1,n,output)!=n){ok=false;break;}
+    }
+    if(ferror(input))ok=false;
+    if(fclose(input)!=0)ok=false;
+    if(fclose(output)!=0)ok=false;
+    if(!ok || copied!=release.size){remove(staged.c_str());throw std::runtime_error("Cannot copy complete update. Check free space on SD card.");}
+    try{verifyUpdateFile(staged,release);}catch(...){remove(staged.c_str());throw;}
+    auto stamp=std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    std::string backup=target+".old-"+std::to_string(stamp);
+    for(int i=1;fs::exists(backup);i++)backup=target+".old-"+std::to_string(stamp)+"-"+std::to_string(i);
+#if defined(__linux__) && !defined(__ANDROID__)
+    if(chmod(staged.c_str(),0755)!=0)throw std::runtime_error("Cannot make update executable");
+#endif
+    if(beforeSwap)beforeSwap(); // On Switch, release RomFS only after staging succeeded.
+    if(std::rename(target.c_str(),backup.c_str())!=0)throw std::runtime_error("Cannot back up installed application");
+    if(std::rename(staged.c_str(),target.c_str())!=0) {
+        if(std::rename(backup.c_str(),target.c_str())!=0)
+            throw std::runtime_error("Installation failed. Previous application is kept at: "+backup);
+        throw std::runtime_error("Installation failed. Previous application restored.");
+    }
+    return backup;
 }
 bool safeSavePath(const std::string& name) {
     auto split=name.find('/');

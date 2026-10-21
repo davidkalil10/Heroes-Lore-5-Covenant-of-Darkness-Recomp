@@ -6,7 +6,7 @@
 #include <vector>
 
 namespace services {
-constexpr const char* Version = "1.1.3";
+constexpr const char* Version = "1.1.4";
 constexpr const char* Repository = "davidkalil10/Heroes-Lore-5-Covenant-of-Darkness-Recomp";
 struct Release {
     std::string tag, name, notes, asset, url, digest;
@@ -18,6 +18,9 @@ std::string base64(const std::vector<uint8_t>& bytes);
 std::vector<uint8_t> unbase64(const std::string& text);
 bool newerVersion(const std::string& remote, const std::string& local);
 Release parseRelease(const std::string& json, const std::string& platform);
+void verifyUpdateFile(const std::string& path,const Release& release);
+std::string installPortableUpdate(const std::string& package,const std::string& target,const Release& release,
+                                  const std::function<void()>& beforeSwap={});
 bool safeSavePath(const std::string& name);
 SaveFiles readSaves(const std::string& root);
 std::string packSaves(const SaveFiles& files, const std::string& platform);

@@ -32,6 +32,8 @@ static std::string dataRoot,executable,resources,accessToken,refreshToken,folder
 static uint64_t tokenExpiry=0;
 static SaveFiles pendingRestore;
 static bool networkReady=false,romfsReleased=false;
+static std::atomic<uint64_t> startupRetryAt{0};
+static std::atomic<int> startupAttempts{0};
 bool romfsWasReleased() {return romfsReleased;}
 static const std::string drive="https://www.googleapis.com/drive/v3/files";
 static const std::string cloudFile="heroes_lore_5_save.json";
@@ -88,7 +90,7 @@ static void launch(std::function<void()> operation) {
         publish([](Status& s){s.busy=false;});
         return 0;
     },"HL5 services",task);
-    if(!worker) {delete task;publish([](Status& s){s.busy=false;s.message="Could not start network task";});}
+    if(!worker) {delete task;publish([](Status& s){s.busy=false;s.checkingUpdates=false;s.downloading=false;s.message="Could not start network task";});}
 }
 static std::string findFolder(bool create) {
     if(!folderId.empty()) return folderId;
@@ -117,6 +119,8 @@ static void queryBackup() {
     }
 }
 void init(const std::string& root,const std::string& exe,const std::string& assets) {
+    state=Status{};startupAttempts=0;startupRetryAt=0;romfsReleased=false;
+    accessToken.clear();refreshToken.clear();folderId.clear();fileId.clear();fileVersion.clear();tokenExpiry=0;
     dataRoot=root;executable=exe;resources=assets;
     fs::create_directories(dataRoot);
     try {auto j=json::parse(readText(dataRoot+"/services.json",16384));state.autoCheck=j.value("check_updates",true);} catch(...) {}
@@ -135,42 +139,58 @@ void shutdown() {
     networkReady=false;
 }
 void setAutoCheck(bool enabled) {
+    if(!enabled)startupRetryAt=0;
     try {writeText(dataRoot+"/services.json",json{{"check_updates",enabled}}.dump());
-        publish([&](Status& s){s.autoCheck=enabled;});}
+        publish([&](Status& s){s.autoCheck=enabled;if(!enabled)s.updateNotice=false;});}
     catch(const std::exception& e) {message(e.what());}
 }
+static void checkFailed(bool manual,const std::string& error) {
+    publish([&](Status& s){s.checkingUpdates=false;s.message=error;});
+    if(!manual && status().autoCheck && startupAttempts.load()<3)
+        startupRetryAt=SDL_GetTicks64()+(startupAttempts.load()==1?5000:15000);
+}
+void pollStartup(uint64_t now) {
+    auto due=startupRetryAt.load();
+    if(due && now>=due && status().autoCheck && !status().busy){startupRetryAt=0;checkUpdate(false);}
+}
+bool takeUpdateNotice() {
+    std::lock_guard<std::mutex> lock(mutex);
+    if(!state.updateNotice || state.busy)return false;
+    state.updateNotice=false;return true;
+}
 void checkUpdate(bool manual) {
-    if(!networkReady) {if(manual) message("Network unavailable");return;}
+    if(status().busy)return;
+    if(!networkReady) {if(manual)message("Network unavailable");return;}
+    if(!manual)startupAttempts++;
+    publish([](Status& s){s.checkingUpdates=true;s.message="Checking GitHub releases...";});
     launch([manual]() {
-        if(manual) message("Checking GitHub releases...");
-        auto r=httpExecute("GET","https://api.github.com/repos/"+std::string(Repository)+"/releases/latest",
-            {"User-Agent: Heroes-Lore-5/1.1.0","Accept: application/vnd.github+json"});
-        if(r.statusCode==404) {if(manual) message("No public release yet. Actions builds are not releases.");return;}
-        if(r.statusCode!=200) {if(manual) message("Could not check updates. You can keep playing offline.");return;}
-        auto release=parseRelease(r.body,platformName());
-        bool available=newerVersion(release.tag,Version);
-        publish([&](Status& s){s.release=release;s.updateAvailable=available;s.downloadReady=false;
-            if(available) s.message="Update "+release.tag+" available. Open Settings to download.";
-            else if(manual) s.message="You have the latest version ("+std::string(Version)+").";});
+        try {
+            auto r=httpExecute("GET","https://api.github.com/repos/"+std::string(Repository)+"/releases/latest",
+                {"User-Agent: Heroes-Lore-5/"+std::string(Version),"Accept: application/vnd.github+json"});
+            if(r.statusCode==404){publish([](Status& s){s.checkingUpdates=false;s.message="No public release yet. Actions builds are not releases.";});return;}
+            if(r.statusCode!=200){checkFailed(manual,"Could not check updates. You can keep playing offline.");return;}
+            auto release=parseRelease(r.body,platformName());bool available=newerVersion(release.tag,Version);
+            startupRetryAt=0;
+            publish([&](Status& s){s.release=release;s.updateAvailable=available;s.downloadReady=false;s.checkingUpdates=false;
+                s.updateNotice=available && !manual && s.autoCheck;
+                s.message=available?"Update available.":"You have the latest version.";});
+        }catch(const std::exception& e){checkFailed(manual,e.what());}
     });
 }
 void downloadUpdate() {
-    auto current=status();if(!current.updateAvailable) return;
+    auto current=status();if(current.busy || !current.updateAvailable) return;
+    publish([&](Status& s){s.downloadReady=false;s.downloading=true;s.downloadedBytes=0;s.totalBytes=current.release.size;});
     launch([release=current.release]() {
-        message("Downloading update. Please wait...");
-        auto directory=dataRoot+"/updates";fs::create_directories(directory);
-        auto path=directory+"/"+release.asset+".download";
-        downloadFile(release.url,path);
-        if(fs::file_size(path)!=release.size) throw std::runtime_error("Incomplete download. Try again.");
-        auto text=readText(path,128*1024*1024);std::vector<uint8_t> bytes(text.begin(),text.end());
-        if(!release.digest.empty() && "sha256:"+sha256(bytes)!=release.digest)
-            throw std::runtime_error("Update checksum mismatch. Download rejected.");
-        bool valid=release.asset.find(".nro")!=std::string::npos?text.size()>20 && text.substr(16,4)=="NRO0":
-            release.asset.find(".AppImage")!=std::string::npos?text.size()>4 && text.substr(0,4)==std::string("\x7f" "ELF",4):
-            text.size()>4 && text.substr(0,2)=="PK";
-        if(!valid) throw std::runtime_error("Downloaded package has invalid format");
-        publish([](Status& s){s.downloadReady=true;s.message="Download verified. Install and restart when ready.";});
+        try {
+            message("Downloading update. Please wait...");
+            auto directory=dataRoot+"/updates";fs::create_directories(directory);
+            auto path=directory+"/"+release.asset+".download";
+            downloadFile(release.url,path,[&](uint64_t done,uint64_t total){publish([&](Status& s){s.downloadedBytes=done;s.totalBytes=total?total:release.size;});});
+            message("Verifying download...");verifyUpdateFile(path,release);
+            publish([](Status& s){s.downloadReady=true;s.downloading=false;s.message="Download verified. Install and restart when ready.";});
+        }catch(...) {publish([](Status& s){s.downloading=false;s.downloadReady=false;});throw;}
     });
+    if(!status().busy)publish([](Status& s){s.downloading=false;});
 }
 void login() {
     if(!networkReady) {message("Network unavailable");return;}
@@ -301,16 +321,14 @@ void applyUpdate() {
         if(!appimage || !*appimage) throw std::runtime_error("Automatic installation requires the portable AppImage build");
         target=appimage;
 #endif
-        auto staged=target+".new",backup=target+".old-"+std::to_string(std::time(nullptr));
-        fs::copy_file(package,staged,fs::copy_options::overwrite_existing);
-        if(fs::exists(backup)) throw std::runtime_error("An update backup with this timestamp exists. Please wait and retry.");
+        installPortableUpdate(package,target,current.release,[](){
 #ifdef __SWITCH__
-        romfsExit();romfsReleased=true;
-#else
-        chmod(staged.c_str(),0755);
+            romfsExit();romfsReleased=true;
 #endif
-        fs::rename(target,backup);
-        try {fs::rename(staged,target);} catch(...) {fs::rename(backup,target);throw;}
+        });
+#ifdef __SWITCH__
+        envSetNextLoad(target.c_str(),target.c_str());
+#endif
         publish([](Status& s){s.restartRequired=true;s.message="Update installed. Close and reopen the game.";});
 #endif
     } catch(const std::exception& e) {
