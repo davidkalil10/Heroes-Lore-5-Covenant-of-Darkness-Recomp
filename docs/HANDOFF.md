@@ -166,3 +166,12 @@ and intermediate progress, and portable NRO staging/backup/rollback without
 copy_file. All test state is disposable. User must manually replace old Switch
 NRO once to receive the installer fix; future updates can use the corrected path.
 Version 1.1.4 / Android code 6. Hardware OTA remains a user validation step.
+
+## 1.1.5 continuation — updater validation release
+
+User explicitly requested a new version/release to exercise the recently fixed
+updater. Version-only release: preserve 1.1.4 runtime/updater behavior, signing,
+asset names and save paths. Metadata is 1.1.5 / Android versionCode 7. README and
+release notes describe upgrading from 1.1.4 to test startup notice, byte progress,
+installation and relaunch. Versions with the old Switch installer still require
+one manual NRO replacement; already-installed 1.1.4 can use its corrected updater.

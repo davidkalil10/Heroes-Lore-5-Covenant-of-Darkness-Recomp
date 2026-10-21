@@ -33,7 +33,11 @@ Os pacotes prontos para jogar ficam em **[Releases](https://github.com/davidkali
 | Android | APK universal ou ARM64 |
 | Nintendo Switch | Homebrew `.nro` com recursos embutidos |
 
-## ✨ Recursos e novidades da v1.1.4
+## ✨ Recursos e novidades da v1.1.5
+
+Esta release mantém as correções da v1.1.4 e aumenta o versionamento para testar
+a atualização entre aparelhos: detecção ao iniciar, progresso do download,
+instalação e relançamento. No Android, o versionCode passa de 6 para 7.
 
 - **Atualização ao iniciar:** aviso visível durante a busca, nova tentativa se a conexão falhar e abertura automática do painel quando houver uma versão nova.
 - **Progresso do download:** barra, percentual e MB recebidos, incluindo no Switch.

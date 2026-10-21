@@ -1,4 +1,4 @@
-# Platform services — version 1.1.4
+# Platform services — version 1.1.5
 
 ## Architecture and reference ports
 
@@ -254,3 +254,11 @@ verifiers remain required. No local test substitutes for Switch hardware testing
 Migration: Switch versions with the broken installer need one manual NRO
 replacement to receive 1.1.4. Publishing a fixed release cannot change the copy
 routine in the already-running 1.1.1 executable. Preserve the data directory.
+
+## 1.1.5 — version-only updater validation
+
+Same updater implementation as 1.1.4; metadata advances to 1.1.5 / Android code 7
+so devices on 1.1.4 can detect, download and install a genuinely newer release.
+Keep startup preference enabled to exercise automatic notice. Validate the final
+installed version and unchanged local progress on hardware. No signing, package
+names, runtime behavior or save paths change in this release.
